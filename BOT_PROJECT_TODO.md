@@ -317,7 +317,7 @@
   - [ ] Add liquidity pool interaction
   - **Deliverable:** RPC utility module ready for all analyzers
 
-- [ ] **Clanker Scraper** (`src/scrapers/clanker.ts`) ⚠️ PRIORITY 2
+- [x] **Clanker Scraper** (`src/scrapers/clanker.ts`) ⚠️ PRIORITY 2
   - [ ] Implement axios HTTP client
   - [ ] Add retry logic (3 retries, exp backoff)
   - [ ] Parse Clanker API response schema
