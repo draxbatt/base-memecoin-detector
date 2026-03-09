@@ -334,7 +334,7 @@
   - **Deliverable:** Bankr module functional
 
 ### Analyzer Modules (2 days)
-- [ ] **Wallet Analysis** (`src/analyzers/wallet-analyzer.ts`)
+- [x] **Wallet Analysis** (`src/analyzers/wallet-analyzer.ts`)
   - [ ] Use RPC provider to fetch holder distribution
   - [ ] Calculate concentration score (% in top 10)
   - [ ] Detect whale patterns
