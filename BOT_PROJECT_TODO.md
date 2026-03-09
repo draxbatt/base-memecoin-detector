@@ -107,91 +107,604 @@
 
 ---
 
-## ✅ PHASE 3: Core Development (Days 4-8)
+## 🚨 PHASE 3: Core Development (Days 4-8) — BLOCKERS IDENTIFIED
 
-### Data Scrapers (2 days)
-- [ ] **Clanker Scraper** (`src/scrapers/clanker.ts`)
-  - [ ] Fetch latest Clanker launches from Clanker API or on-chain events
-  - [ ] Parse token metadata (name, symbol, CA, creator)
-  - [ ] Handle rate limits + retries
+### ⚠️ CRITICAL BLOCKERS (Must Fix Before Phase 3)
+
+#### BLOCKER #1: Missing RPC Provider Manager
+**File:** `src/utils/rpc-provider.ts` (NOT CREATED)
+**Status:** 🔴 BLOCKING ALL ANALYZERS
+**Details:**
+- No ethers.js JsonRpcProvider initialization
+- No backup RPC fallback logic (Alchemy → Infura → Ankr)
+- No request rate limiter for RPC calls
+- No contract interaction utilities (ERC-20 interface, Uniswap pool queries)
+- No holder analysis via `eth_getLogs()` and balance queries
+- No liquidity pool reserve fetching
+
+**Impact:** All analyzer modules depend on RPC data. Cannot proceed without this.
+
+**Solution Required:**
+```typescript
+// Create src/utils/rpc-provider.ts with:
+- createRpcProvider(primary, fallback): Promise<JsonRpcProvider>
+- getRateLimiter(): RateLimiter
+- fetchHolders(tokenCA): Promise<HolderData[]>
+- fetchLiquidity(poolAddress): Promise<LiquidityData>
+- fetchContractMetadata(ca): Promise<{ name, symbol, decimals, supply }>
+```
+
+**Time to fix:** 100-150 lines, 1-2 hours
+
+---
+
+#### BLOCKER #2: Clanker & Bankr API Integration Not Implemented
+**Files:** `src/scrapers/clanker.ts`, `src/scrapers/bankr.ts`
+**Status:** 🔴 BLOCKING MAIN SCRAPER LOOP
+**Details:**
+- `fetchClankerTokens()` throws "Not implemented"
+- `parseClankerResponse()` returns empty array
+- No axios HTTP client setup
+- No retry/exponential backoff logic
+- No rate limiting (max 100 req/min for Clanker API)
+- Bankr scraper doesn't query Base RPC for factory events
+
+**Impact:** Bot cannot discover any tokens. Complete blocker.
+
+**Solution Required:**
+```typescript
+// src/scrapers/clanker.ts:
+- Implement HTTP client with axios
+- Add retry logic (3 retries, exponential backoff: 2s, 4s, 8s)
+- Add rate limiter (max 100/min)
+- Parse Clanker response schema
+- Return ClankerToken[] with all fields
+
+// src/scrapers/bankr.ts:
+- Query RPC for Bankr factory contract events
+- Decode TokenCreated event logs
+- Fetch token metadata via RPC
+- Return BankrToken[] matching Clanker schema
+```
+
+**Time to fix:** 150-200 lines, 2-3 hours
+
+---
+
+#### BLOCKER #3: Database Layer Not Implemented
+**File:** `src/database/db.ts`
+**Status:** 🔴 BLOCKING DATA PERSISTENCE
+**Details:**
+- `initDatabase()` throws "Not implemented"
+- `upsertToken()` throws "Not implemented"
+- `insertAnalysis()` throws "Not implemented"
+- No SQLite connection/query execution
+- No schema creation
+- No indexes
+- No connection pooling
+
+**Impact:** No data persistence. Bot cannot track tokens or analyses.
+
+**Solution Required:**
+```typescript
+// src/database/db.ts:
+- Create SQLite connection pool
+- Initialize schema (tokens, analyses, alerts_sent, creators tables)
+- Implement CRUD operations:
+  * upsertToken(token): Promise<number>
+  * insertAnalysis(analysis): Promise<number>
+  * getTokenByCA(ca): Promise<Token | null>
+  * insertAlertSent(tokenId, type): Promise<void>
+  * getRecentAnalyses(limit): Promise<Analysis[]>
+  * closeDatabase(): Promise<void>
+
+// Create src/database/schema.ts:
+- Complete SQLite DDL with proper types
+- Add indexes for common queries
+```
+
+**Time to fix:** 200-300 lines, 3-4 hours
+
+---
+
+#### BLOCKER #4: Telegram Integration Not Implemented
+**File:** `src/alerts/telegram-notifier.ts`
+**Status:** 🔴 BLOCKING ALERT DELIVERY
+**Details:**
+- `sendTelegramAlert()` throws "Not implemented"
+- `formatAlertMessage()` returns empty string
+- No Telegram bot initialization
+- No message sending via node-telegram-bot-api
+- No error handling
+- No rate limiting (max 1 alert/2 min per spec)
+- No button/link formatting
+
+**Impact:** Alerts never reach Drix. Cannot validate scoring algorithm.
+
+**Solution Required:**
+```typescript
+// src/alerts/telegram-notifier.ts:
+- Initialize TelegramBot with token
+- Implement sendTelegramAlert(alert): Promise<boolean>
+  * Format message with token details, scores, risks, links
+  * Send via Telegram API with retry (3 retries, 30s wait)
+  * Handle rate limiting (max 1 per 2 min)
+  * Return success/failure
+- Implement formatAlertMessage(alert): string
+  * Template: 🚨 NEW INTERESTING TOKEN
+  * Include: name, CA, launcher, score, positives, risks, links
+  * Format scores as visual bars or percentages
+```
+
+**Time to fix:** 150-200 lines, 2-3 hours
+
+---
+
+#### BLOCKER #5: Main Orchestrator Loop Not Implemented
+**File:** `src/index.ts`
+**Status:** 🔴 BLOCKING BOT EXECUTION
+**Details:**
+- `main()` function incomplete (TODO placeholders)
+- No database initialization
+- No RPC provider setup
+- No Telegram bot setup
+- No cron scheduler for 10-minute scans
+- No error recovery/retry logic
+- No graceful shutdown implementation
+
+**Impact:** Bot does not run. Cannot execute Phase 3 pipeline.
+
+**Solution Required:**
+```typescript
+// src/index.ts:
+- Initialize database: await initDatabase()
+- Create RPC provider with fallback
+- Initialize Telegram bot
+- Setup cron job: 0 */10 * * * * (every 10 minutes)
+- On each scan:
+  1. Fetch Clanker tokens
+  2. Fetch Bankr tokens
+  3. Deduplicate (check if CA already in DB)
+  4. For each new token:
+     a. Fetch RPC data (holders, liquidity, creator, price)
+     b. Analyze holder distribution
+     c. Analyze creator history
+     d. Analyze liquidity
+     e. Analyze pump patterns
+     f. Calculate final score
+     g. Store analysis in DB
+     h. If score >= 65: send Telegram alert
+  5. Error handling & logging
+- Graceful shutdown: cleanup DB, Telegram on SIGTERM
+```
+
+**Time to fix:** 150-200 lines, 2-3 hours
+
+---
+
+### Additional Missing Components
+
+#### MISSING: Type Definitions Module
+**File:** `src/types/index.ts` (NOT CREATED)
+**Impact:** Type safety across modules
+**Solution:** Create shared interfaces file with:
+- Token, Analysis, Alert, HolderData, CreatorData, LiquidityData, PumpData types
+
+---
+
+#### MISSING: RPC Utilities
+**Files:** `src/utils/contract-abi.ts`, `src/utils/uniswap.ts` (NOT CREATED)
+**Impact:** Cannot query contract data, liquidity pools
+**Solution:** Add ERC-20 ABI, Uniswap V2/V3 ABIs, and query functions
+
+---
+
+#### MISSING: Error Handling Middleware
+**Files:** `src/utils/retry.ts` (NOT CREATED)
+**Impact:** API failures cause crashes, no backoff
+**Solution:** Implement exponential backoff retry logic for all API calls
+
+---
+
+### Data Scrapers (2 days) — NOW WITH BLOCKERS ADDRESSED
+
+- [ ] **RPC Provider Manager** (`src/utils/rpc-provider.ts`) ⚠️ PRIORITY 1
+  - [ ] Initialize primary RPC (Alchemy)
+  - [ ] Setup backup RPC (Infura, Ankr)
+  - [ ] Add request rate limiter (max 300 req/sec)
+  - [ ] Implement ERC-20 contract calls
+  - [ ] Add holder query via `eth_getLogs()`
+  - [ ] Add liquidity pool interaction
+  - **Deliverable:** RPC utility module ready for all analyzers
+
+- [ ] **Clanker Scraper** (`src/scrapers/clanker.ts`) ⚠️ PRIORITY 2
+  - [ ] Implement axios HTTP client
+  - [ ] Add retry logic (3 retries, exp backoff)
+  - [ ] Parse Clanker API response schema
+  - [ ] Handle rate limits (100/min)
   - [ ] Log errors gracefully
   - [ ] Unit tests for parser
-  - **Deliverable:** Clanker module fetches tokens every 5 min
+  - **Deliverable:** Fetches tokens every 10 min
 
 - [ ] **Bankr Scraper** (`src/scrapers/bankr.ts`)
-  - [ ] Fetch latest Bankr launches
-  - [ ] Parse token metadata
+  - [ ] Query RPC for Bankr factory events
+  - [ ] Decode event logs → token metadata
   - [ ] Deduplicate vs Clanker
   - [ ] Unit tests
   - **Deliverable:** Bankr module functional
 
-- [ ] **RPC Integration**
-  - [ ] Connect to Base RPC (Alchemy, Infura, or public endpoint)
-  - [ ] Fetch on-chain data: holders, liquidity, contract details
-  - [ ] Error handling for RPC failures
-
 ### Analyzer Modules (2 days)
 - [ ] **Wallet Analysis** (`src/analyzers/wallet-analyzer.ts`)
-  - [ ] Parse holder distribution
-  - [ ] Calculate concentration score (% in top 10 wallets)
+  - [ ] Use RPC provider to fetch holder distribution
+  - [ ] Calculate concentration score (% in top 10)
   - [ ] Detect whale patterns
   - [ ] Unit tests
   - **Deliverable:** Can score holder diversity
 
 - [ ] **Creator History Tracker** (`src/analyzers/creator-history.ts`)
-  - [ ] Track creator wallet address
-  - [ ] Check previous launches (success/rug history)
+  - [ ] Query RPC for creator's previous launches
+  - [ ] Check for rug pull patterns
+  - [ ] Cache results (1-hour TTL)
   - [ ] Assign creator risk score
-  - [ ] Cache results (avoid redundant checks)
   - **Deliverable:** Can assess creator credibility
 
 - [ ] **Liquidity Analyzer** (`src/analyzers/liquidity.ts`)
-  - [ ] Check if liquidity locked
-  - [ ] Detect burneable tokens (dev can pull)
+  - [ ] Use RPC to check if liquidity locked
+  - [ ] Detect burnable tokens
   - [ ] Analyze liquidity depth
   - **Deliverable:** Liquidity risk score
 
-### Scoring Engine (1 day)
-- [ ] **Score Algorithm** (`src/scoring/score-engine.ts`)
-  - [ ] Combine all signals: holder distribution, creator history, liquidity, pump speed
-  - [ ] Weighted scoring (e.g., holder diversity 30%, creator history 40%, liquidity 20%, pump speed 10%)
-  - [ ] Final score: 0-100 (higher = safer + more opportunity)
-  - [ ] Define threshold for "interesting" (e.g., ≥60 score)
-  - [ ] Unit tests
-  - **Deliverable:** Comprehensive scoring module
+- [ ] **Pump Pattern Analyzer** (`src/analyzers/pump-pattern.ts`)
+  - [ ] Fetch price history from RPC
+  - [ ] Calculate launch-to-current ratio
+  - [ ] Detect volume spikes
+  - [ ] **Deliverable:** Pump pattern score
 
-### Alert System (1 day)
-- [ ] **Telegram Notifier** (`src/alerts/telegram-notifier.ts`)
-  - [ ] Send structured alerts to Telegram (chat ID)
-  - [ ] Include: token name, CA, chart link, score, risk breakdown, creator history
-  - [ ] Error handling (Telegram API failures)
-  - [ ] Rate limiting (don't spam)
+### Scoring Engine (1 day)
+- [x] **Score Algorithm** (`src/scoring/score-engine.ts`) ✅ READY
+  - [x] Weighted scoring (holder 30%, creator 40%, liquidity 15%, pump 15%)
+  - [x] Final score 0-100
+  - [x] Thresholds (65 = alert, 80 = premium)
+  - [x] Unit tests
+  - **Deliverable:** Scoring module operational
+
+### Alert System (1 day) — NOW WITH BLOCKER ADDRESSED
+- [ ] **Telegram Notifier** (`src/alerts/telegram-notifier.ts`) ⚠️ PRIORITY 3
+  - [ ] Initialize TelegramBot instance
+  - [ ] Implement `sendTelegramAlert()` with retry
+  - [ ] Format alert message (template with scores, risks, links)
+  - [ ] Add rate limiting (max 1 alert/2 min)
+  - [ ] Error handling & logging
   - [ ] Unit tests
   - **Deliverable:** Telegram integration working
 
-### Database (1 day)
-- [ ] **Schema & ORM** (`src/database/schema.ts`, `db.ts`)
-  - [ ] Create SQLite schema:
-    - `tokens` (CA, name, symbol, launch_time, first_seen, last_updated)
-    - `analyses` (token_id, score, components, timestamp)
-    - `alerts_sent` (token_id, alert_time, to_user)
-  - [ ] Prevent duplicate alerts for same token
-  - [ ] Query builder for stats (how many tokens/day, top scores, etc.)
-  - [ ] Database migration system
+### Database (1 day) — NOW WITH BLOCKER ADDRESSED
+- [ ] **SQLite Layer** (`src/database/db.ts`, `src/database/schema.ts`) ⚠️ PRIORITY 4
+  - [ ] Create SQLite schema (tokens, analyses, alerts_sent, creators)
+  - [ ] Implement CRUD operations (upsert, insert, query)
+  - [ ] Add indexes for performance
+  - [ ] Connection pooling + error handling
+  - [ ] Database migrations
   - **Deliverable:** SQLite database functional
 
-### Main Orchestrator (1 day)
-- [ ] **Main Loop** (`src/index.ts`)
-  - [ ] Initialize all scrapers, analyzers, notifier
-  - [ ] Run on schedule (every 5-10 min): scrape → analyze → score → alert
-  - [ ] Error recovery (don't crash, retry with backoff)
-  - [ ] Graceful shutdown (SIGTERM handling)
-  - [ ] Logger output (what's happening)
+### Main Orchestrator (1 day) — NOW WITH BLOCKER ADDRESSED
+- [ ] **Main Loop** (`src/index.ts`) ⚠️ PRIORITY 5
+  - [ ] Initialize all modules (RPC, DB, Telegram)
+  - [ ] Setup cron job (every 10 minutes)
+  - [ ] Implement main scan loop
+  - [ ] Error recovery + retry logic
+  - [ ] Graceful shutdown (SIGTERM)
+  - [ ] Logger integration
   - **Deliverable:** Bot runs continuously
 
 ---
 
 ## ✅ PHASE 4: Testing & Optimization (Days 9-10)
+
+### Testing
+- [ ] **Unit Tests** (Jest)
+  - [ ] Test RPC provider (mock responses)
+  - [ ] Test scrapers (mock API responses)
+  - [ ] Test analyzers (verify score calculations)
+  - [ ] Test scoring engine (verify weights applied correctly)
+  - [ ] Test Telegram formatter (verify message structure)
+  - [ ] Target: >80% code coverage
+  - **Deliverable:** `npm test` passes
+
+- [ ] **Integration Tests**
+  - [ ] Test full flow: scrape → analyze → score → alert (with test data)
+  - [ ] Verify database persistence (insert/query)
+  - [ ] Test error recovery (API failures, retries)
+  - [ ] Test graceful shutdown
+  - **Deliverable:** End-to-end flow working
+
+- [ ] **Manual Testing (with Drix)**
+  - [ ] Run bot locally for 30 minutes
+  - [ ] Check Telegram alerts (real messages to test group)
+  - [ ] Verify scoring matches Drix expectations
+  - [ ] Test with 5 recent real memecoin launches
+  - [ ] Validate false positive rate (should be <10%)
+  - **Deliverable:** Drix approves functionality
+
+### Optimization
+- [ ] **Performance Tuning**
+  - [ ] Measure latency per token (target: <3s per token)
+  - [ ] Optimize database queries (add indexes if needed)
+  - [ ] Cache creator history (1-hour TTL)
+  - [ ] Batch RPC calls where possible
+  - [ ] Profile memory usage (target: <256MB)
+  - **Deliverable:** Bot responds quickly
+
+- [ ] **Reliability**
+  - [ ] Add comprehensive error handling
+  - [ ] Retry logic with exponential backoff
+  - [ ] Circuit breaker for failed APIs
+  - [ ] Health checks (API connectivity)
+  - [ ] Monitor uptime (99.5% target)
+  - **Deliverable:** Bot handles failures gracefully
+
+---
+
+## ✅ PHASE 5: Documentation & Deployment (Days 11-12)
+
+### Documentation
+- [ ] **README.md** (finalize)
+  - [ ] Overview (what it does, why it matters)
+  - [ ] Quick start (clone, install, configure)
+  - [ ] Environment variables guide
+  - [ ] Telegram setup instructions
+  - [ ] Troubleshooting section
+
+- [ ] **ARCHITECTURE.md** (finalize)
+  - [ ] System overview diagram
+  - [ ] Data flow explanation
+  - [ ] Scoring algorithm breakdown
+  - [ ] API reference (all modules)
+
+- [ ] **CODE COMMENTS**
+  - [ ] Add JSDoc comments to all public functions
+  - [ ] Explain scoring weights
+  - [ ] Flag areas needing improvement
+
+### Deployment
+- [ ] **Choose Platform** (Railway recommended)
+  - [ ] Create Railway account (if needed)
+  - [ ] Link GitHub repo
+  - [ ] Setup environment variables
+  - [ ] Deploy from GitHub repo
+  - [ ] Test in production (send test alert)
+
+- [ ] **Monitoring Setup**
+  - [ ] Log aggregation (view bot logs via Railway)
+  - [ ] Uptime check (ping Railway health endpoint)
+  - [ ] Error alerts (notify Drix of crashes via Telegram)
+  - [ ] Daily summary report (tokens analyzed, alerts sent)
+
+- [ ] **Launch Checklist**
+  - [ ] All tests pass ✅
+  - [ ] Environment variables set ✅
+  - [ ] Telegram bot token valid ✅
+  - [ ] Database initialized ✅
+  - [ ] Deployment successful ✅
+  - [ ] Bot running 24/7 ✅
+
+**Deliverable:** Bot live and operational
+
+---
+
+## 📋 BLOCK RESOLUTION CHECKLIST
+
+Use this checklist to verify each blocker is addressed before starting Phase 3:
+
+### BLOCKER #1: RPC Provider Manager
+- [ ] `src/utils/rpc-provider.ts` created with JsonRpcProvider factory
+- [ ] Backup RPC fallback implemented (Alchemy → Infura → Ankr)
+- [ ] Request rate limiter added (max 300 req/sec)
+- [ ] ERC-20 contract ABI utilities added
+- [ ] Holder query via eth_getLogs() implemented
+- [ ] Liquidity pool interaction implemented
+- [ ] Error handling for RPC failures
+- **Status:** ⏳ BLOCKED - waiting for implementation
+
+### BLOCKER #2: Clanker & Bankr Scrapers
+- [ ] `src/scrapers/clanker.ts` - HTTP client implemented with axios
+- [ ] Retry logic with exponential backoff (3 retries: 2s, 4s, 8s)
+- [ ] Rate limiter (max 100 req/min for Clanker)
+- [ ] Response schema parsing complete
+- [ ] `src/scrapers/bankr.ts` - RPC factory event query implemented
+- [ ] Token metadata fetch via RPC added
+- [ ] Deduplication logic vs Clanker
+- [ ] Both modules return consistent schema (ClankerToken/BankrToken)
+- **Status:** ⏳ BLOCKED - waiting for implementation
+
+### BLOCKER #3: Database Layer
+- [ ] SQLite connection pool created
+- [ ] `src/database/schema.ts` with complete DDL created
+- [ ] Tables created: tokens, analyses, alerts_sent, creators
+- [ ] Indexes added for common queries (launch_time, score, token_id)
+- [ ] `src/database/db.ts` - All CRUD operations implemented
+- [ ] Migrations system setup (or manual migration script)
+- [ ] Connection error handling
+- [ ] Transaction support for multi-step operations
+- **Status:** ⏳ BLOCKED - waiting for implementation
+
+### BLOCKER #4: Telegram Integration
+- [ ] TelegramBot initialization in main() with token
+- [ ] `sendTelegramAlert()` fully implemented with retry logic
+- [ ] Alert message formatter with all required fields
+- [ ] Rate limiting (max 1 alert per 2 minutes)
+- [ ] Error handling (429 throttle, network failures)
+- [ ] Graceful degradation (queued alerts if Telegram down)
+- [ ] Unit tests for formatter
+- **Status:** ⏳ BLOCKED - waiting for implementation
+
+### BLOCKER #5: Main Orchestrator Loop
+- [ ] Database initialization in main()
+- [ ] RPC provider creation with fallback
+- [ ] Telegram bot initialization
+- [ ] Cron job setup (every 10 minutes: `0 */10 * * * *`)
+- [ ] Main scan loop implemented
+- [ ] Error recovery & retry logic (crash handling)
+- [ ] Graceful shutdown (SIGTERM/SIGINT handlers)
+- [ ] Logger integration throughout
+- [ ] Health check mechanism
+- **Status:** ⏳ BLOCKED - waiting for implementation
+
+---
+
+## 🚀 Agent Spawning for Phase 3
+
+### Recommended Team
+
+| Agent | Role | Tasks | Days |
+|-------|------|-------|------|
+| **crypto-dev-agent-1** | Backend Lead | RPC Provider, Scrapers, Database | 2-3 |
+| **crypto-dev-agent-2** | Analyzer Lead | All 4 analyzers (wallet, creator, liquidity, pump) | 2-3 |
+| **alerting-dev-agent** | Telegram + Orchestration | Telegram integration, Main loop, Cron | 1-2 |
+| **test-qa-agent** | QA/Testing | Unit tests, Integration tests, Manual QA | 2 |
+| **devops-deploy-agent** | DevOps | Docker, Railway deployment, Monitoring | 1 |
+
+**Spawn Order:**
+1. Spawn crypto-dev-agent-1 + crypto-dev-agent-2 immediately (work in parallel)
+2. After day 2: Spawn alerting-dev-agent (can start while analyzers finish)
+3. After day 5: Spawn test-qa-agent (full integration tests)
+4. After day 7: Spawn devops-deploy-agent (deployment + monitoring)
+
+**Timeline:** 5 days primary development + 2 days testing + 1 day deployment = **8 days total**
+
+---
+
+## 📊 Progress Metrics
+
+### Code Metrics
+- Total lines of code: Currently ~680 (scaffold), target ~2200 after Phase 3
+- Test coverage: 0% (will target >80% after Phase 4)
+- Modules implemented: 2/8 (config, utils, scoring) = 25%
+
+### Data Metrics (Post-Launch)
+- Tokens analyzed per day: Target 3,300+ (23 per scan × 6 scans/hour × 24 hours)
+- Database growth: ~1MB per month
+- Alerts sent per day: 10-20 (high-quality opportunities only)
+
+### Operational Metrics
+- Bot uptime: Target 99.5%
+- Average scan time: Target <15 seconds
+- RPC latency: Target <2 seconds per token
+- Telegram delivery time: Target <2 seconds
+
+---
+
+## 🎯 Success Criteria (Final)
+
+✅ **Complete when:**
+
+1. **Functionality**
+   - [ ] Bot detects all Clanker + Bankr launches within 1 minute
+   - [ ] Scoring algorithm matches Drix's expectations (manual validation)
+   - [ ] Telegram alerts contain: token name, CA, score breakdown, risks, links
+   - [ ] Database tracks 100+ unique tokens within 1 week of launch
+   - [ ] Zero false positives (only alert on score ≥65)
+
+2. **Reliability**
+   - [ ] Bot runs 24/7 without crashes for 48-hour test period
+   - [ ] API failures trigger recovery (retry, fallback, no hang)
+   - [ ] Graceful shutdown works (no data loss)
+   - [ ] Error logs are comprehensive and actionable
+
+3. **Performance**
+   - [ ] Average scan time <15 seconds (10 min window)
+   - [ ] Memory usage <256MB steady state
+   - [ ] RPC latency <2 seconds per token
+   - [ ] Database queries <100ms
+
+4. **Deployment**
+   - [ ] Docker image builds successfully
+   - [ ] Railway deployment works (auto-restart on crash)
+   - [ ] Environment variables loaded securely
+   - [ ] Logs accessible and searchable
+
+5. **Documentation**
+   - [ ] README complete (setup, troubleshooting)
+   - [ ] Architecture diagram present
+   - [ ] All modules documented (JSDoc)
+   - [ ] Deployment guide written
+
+---
+
+## 📝 Notes for Agents
+
+### For crypto-dev-agent-1 (RPC + Scrapers)
+- Prioritize RPC Provider Manager (blocker #1) — everything depends on it
+- Use Alchemy free tier as primary (300 req/sec capacity)
+- Always implement backup RPC (Infura) for reliability
+- Test with real Clanker API responses (use curl to fetch sample data)
+
+### For crypto-dev-agent-2 (Analyzers)
+- Wait for RPC Provider Manager to be ready before starting
+- All analyzers should follow same structure:
+  ```typescript
+  export async function analyzeX(data): Promise<XAnalysisResult>
+  export const rules = { /* scoring rules */ }
+  ```
+- Unit tests must verify scoring formulas match SCORING_ALGORITHM.md exactly
+
+### For alerting-dev-agent (Telegram + Orchestration)
+- Telegram message must match TELEGRAM_CONFIG.md format exactly
+- Test with Drix's test Telegram group (not production chat)
+- Orchestrator loop must handle failures gracefully (no unhandled rejections)
+- Implement health check endpoint for monitoring
+
+### For test-qa-agent
+- Create mock fixtures for all API responses (Clanker, RPC, Telegram)
+- Test full flow with synthetic data before integration with real APIs
+- Measure code coverage: `npm run test:coverage`
+- Document any edge cases found
+
+### For devops-deploy-agent
+- Use Docker multi-stage build to minimize image size
+- Railway deployment should use GitHub Actions for auto-deploy
+- Setup error alerting to Drix Telegram on:
+  - Bot crash (SIGTERM/SIGKILL)
+  - No tokens detected for >30 min
+  - Error rate >5% in 1-hour window
+
+---
+
+## 🔗 Related Documents
+
+- **BOT_PROJECT_DETAILED_PHASES.md** — Full breakdown of all phases
+- **DATA_SOURCES.md** — API endpoints, schemas, rate limits
+- **SCORING_ALGORITHM.md** — Scoring weights, formulas, thresholds
+- **TELEGRAM_CONFIG.md** — Alert message format, Telegram setup
+- **OPERATIONAL_PARAMETERS.md** — Performance targets, error handling
+- **AGENT_TEAM.md** — Agent roles and responsibilities
+- **AGENT_WORKFLOW_24H.md** — 24/7 orchestration strategy
+
+---
+
+## 🚨 Deployment Status
+
+| Component | Status | Blocker |
+|-----------|--------|---------|
+| RPC Provider | 🔴 NOT STARTED | YES |
+| Clanker Scraper | 🔴 STUB ONLY | YES |
+| Bankr Scraper | 🔴 STUB ONLY | YES |
+| Wallet Analyzer | 🔴 STUB ONLY | Depends on RPC |
+| Creator Analyzer | 🔴 STUB ONLY | Depends on RPC |
+| Liquidity Analyzer | 🔴 STUB ONLY | Depends on RPC |
+| Pump Analyzer | 🔴 STUB ONLY | Depends on RPC |
+| Scoring Engine | ✅ READY | NO |
+| Database | 🔴 STUB ONLY | YES |
+| Telegram | 🔴 STUB ONLY | YES |
+| Orchestrator | 🔴 STUB ONLY | YES |
+| Tests | 🔴 MINIMAL | NO |
+
+**Overall:** Phase 3 BLOCKED until #5 critical blockers are addressed. Estimated 4-5 days to resolve with dedicated agent team.
+
+---
+
+**Last Updated:** 2026-03-09 21:27  
+**Status:** BLOCKER SCAN COMPLETE - Ready for agent spawning
 
 ### Testing
 - [ ] **Unit Tests** (Jest)

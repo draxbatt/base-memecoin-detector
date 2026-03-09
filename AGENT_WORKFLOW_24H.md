@@ -11,192 +11,162 @@
 ### **Règle d'Or**
 
 ```
-✅ dev-coder DOIT toujours travailler si TODO n'est pas vide
-✅ Si dev-coder crash → spawn instant d'un nouveau
-✅ Si improvement-bot trouve du travail → trigger dev-coder immédiatement
-✅ Si personne ne bosse → ALERT DRIX (mais ne doit pas arriver)
+✅ ORCHESTRATOR-MASTER agent TOUJOURS actif (persistent session)
+✅ orchestrator respawn improvement-bot chaque 2h auto
+✅ orchestrator respawn dev-coder chaque fois TODO non-empty
+✅ orchestrator respawn code-auditor chaque 4h auto
+✅ orchestrator respawn devops-monitor chaque 6h auto
+✅ orchestrator gère crashes + recovery auto
+✅ Si personne ne bosse → ALERT DRIX (orchestrator le détecte)
+```
+
+### **Implémentation Réelle (CORRECTION)**
+
+Mode "run" = **one-shot, agents terminent après**. Pour 24/7 vrai:
+
+```
+SOLUTION: Orchestrator-Master Agent (persistent)
+
+spawned ONCE en mode "session" (persistent):
+  ├─ Tourne 24/7 indéfiniment
+  ├─ Gère tous les respawning auto
+  ├─ Respawn improvement-bot: 0 */2 * * * (cron inside agent)
+  ├─ Respawn dev-coder: si TODO non-empty
+  ├─ Respawn code-auditor: 0 */4 * * * (cron inside agent)
+  ├─ Respawn devops-monitor: 0 */6 * * * (cron inside agent)
+  ├─ Monitor crashes: respawn instant si agent mort
+  ├─ Report status: Telegram every 2h
+  └─ Loop forever jusqu'à manual kill
 ```
 
 ---
 
-## 📅 CRON SCHEDULE DÉTAILLÉ (24/7 Coverage)
+## 📅 CRON SCHEDULE DÉTAILLÉ (Inside Orchestrator)
 
-### **Every 2 Hours** (Improvement Bot)
+### **Orchestrator-Master Persistent Session**
+
+Spawned ONCE:
 ```
-Cron: 0 */2 * * * (toutes les 2 heures)
-
-Action:
-  1. improvement-bot scan codebase (30 min)
-     ├─ Code quality checks
-     ├─ Performance analysis
-     ├─ Security audit
-     └─ Tech debt detection
-  
-  2. Find issues & add to TODO
-  
-  3. Check if dev-coder is running
-     ├─ If running: wait, don't spawn
-     └─ If NOT running:
-        ├─ Check TODO list
-        ├─ If tasks exist: SPAWN dev-coder with task list
-        └─ If no tasks: just exit
-  
-  4. Send digest to Drix (summary of findings)
-     └─ Email: "2am: Found 3 new issues"
-
-Timing:
-  00:00, 02:00, 04:00, 06:00, 08:00, 10:00, 12:00, 14:00, 16:00, 18:00, 20:00, 22:00
+sessions_spawn(
+  runtime="subagent",
+  mode="session",  ← PERSISTENT (never exits)
+  task="Run 24/7 orchestrator loop"
+)
 ```
 
-### **Every 30 Minutes** (Dev-Coder Health Check)
+**Inside orchestrator, every 2 hours:**
 ```
-Cron: */30 * * * * (toutes les 30 min)
-
-Action:
-  1. Check if dev-coder is alive
-     ├─ If YES: continue (don't interrupt)
-     └─ If NO:
-        ├─ Check TODO list
-        ├─ If tasks exist: SPAWN new dev-coder immediately
-        ├─ Log recovery: "22:45 - dev-coder crashed, spawned new"
-        └─ ALERT Drix: "dev-coder crashed, recovered"
-  
-  2. Verify git activity
-     ├─ If no commits in last 30 min BUT tasks in TODO:
-     │  └─ dev-coder might be stuck → force spawn new
-     └─ If commits exist: OK, all good
-
-Note: CRITICAL FALLBACK - ensures no dead time
+00:00 → Spawn improvement-bot
+02:00 → Spawn improvement-bot
+04:00 → Spawn code-auditor
+06:00 → Spawn devops-monitor
+etc...
 ```
 
-### **Every 4 Hours** (Code Auditor Deep Dive)
-```
-Cron: 0 */4 * * * (toutes les 4 heures)
-
-Action:
-  1. code-auditor review ALL recent commits (since last run)
-  
-  2. If bugs found:
-     ├─ Create issue in TODO
-     └─ ALERT: "4am - Bug found in scraper.ts, added to TODO"
-  
-  3. If major issues:
-     ├─ Revert problematic commit
-     └─ CRITICAL ALERT Drix: "Code quality issue detected, reverted"
-
-Timing: 00:00, 04:00, 08:00, 12:00, 16:00, 20:00
-```
-
-### **Every 6 Hours** (DevOps Monitor)
-```
-Cron: 0 */6 * * * (toutes les 6 heures)
-
-Action:
-  1. Check bot health (if bot is live)
-     ├─ Uptime check
-     ├─ Error rates
-     ├─ Database integrity
-     ├─ API rate limits
-     └─ Memory/CPU usage
-  
-  2. If issues found:
-     ├─ Create ticket in TODO
-     └─ ALERT: "6am - Bot error rate 2%, added to TODO"
-  
-  3. Generate metrics report
-     ├─ Lines of code
-     ├─ Test coverage
-     ├─ Commits today
-     └─ Issues fixed today
-
-Timing: 00:00, 06:00, 12:00, 18:00
-```
-
-### **Daily at 08:00 AM** (Morning Report)
-```
-Cron: 0 8 * * * (Chaque matin 8h)
-
-Action:
-  1. improvement-bot generates full night report:
-     ├─ How many issues found
-     ├─ How many fixed
-     ├─ Code quality trend
-     ├─ Performance improvements
-     ├─ Bugs fixed
-     └─ Recommendations for today
-  
-  2. Send to Drix (Telegram + Notion)
-     └─ "Night report: 12 tasks completed, 8 new issues found"
-
-Purpose: Drix wakes up knowing exactly what happened
-```
-
----
-
-## 🚀 AUTO-SPAWN LOGIC (Garantie Zéro Downtime)
-
-### **Dev-Coder Auto-Spawn Flow**
+### **Orchestrator Responsibilities**
 
 ```
-TRIGGER 1: Cron found new tasks in TODO
-  ├─ improvement-bot runs at 02:00
-  ├─ Finds 3 new issues
-  ├─ Checks if dev-coder is running
-  │   └─ NOT running?
-  │   └─ SPAWN: sessions_spawn(
-  │         task="Work on BOT_PROJECT_TODO.md",
-  │         runtime="subagent",
-  │         mode="session" (persistent)
-  │       )
-  ├─ dev-coder gets task list
-  └─ Starts working immediately
-
-TRIGGER 2: Dev-Coder Health Check fails (*/30)
-  ├─ System checks if dev-coder process still alive
-  ├─ If crashed:
-  │   ├─ Log: "22:45 - dev-coder crashed, spawning recovery"
-  │   ├─ SPAWN recovery session with same TODO
-  │   └─ ALERT Drix: "dev-coder recovered from crash"
-  └─ Continue work without interruption
-
-TRIGGER 3: Code-Auditor finds critical bug
-  ├─ code-auditor @ 04:00 finds security issue
-  ├─ Creates URGENT task in TODO
-  ├─ Force spawns dev-coder if not running
-  └─ Task gets priority
-
-TRIGGER 4: Manual (Drix sends message)
-  ├─ Drix: "start work now"
-  ├─ SPAWN dev-coder immediately regardless of schedule
-  └─ Override all waiting
-```
-
-### **Dev-Coder Execution Loop (Persistent Session)**
-
-```
-SESSION STARTS (spawned by improvement-bot or cron)
-
 LOOP FOREVER:
-  1. Read BOT_PROJECT_TODO.md
-     └─ Get all [ ] unchecked tasks (highest priority first)
+  1. Every 2 hours:
+     └─ Spawn improvement-bot (scan code)
+     └─ improvement-bot exits when done
   
-  2. If tasks exist:
-     ├─ Pick next task
-     ├─ Implement feature/fix
-     ├─ Test locally
-     ├─ Push to feature branch
-     ├─ Commit message: "[auto] task: description"
-     └─ Go to step 1 (next task)
+  2. After improvement-bot exits:
+     └─ Check if dev-coder running
+     └─ If NOT running + TODO has tasks:
+        └─ Spawn dev-coder
   
-  3. If NO tasks exist:
-     ├─ Check if improvement-bot will run soon
-     ├─ If YES (within 30 min): WAIT
-     ├─ If NO: EXIT gracefully
-     └─ Next cron will spawn new session if needed
+  3. Every 30 minutes:
+     └─ Health check all subagents
+     └─ If any dead + should be running:
+        └─ Respawn immediately
+  
+  4. Every 4 hours:
+     └─ Spawn code-auditor (deep audit)
+  
+  5. Every 6 hours:
+     └─ Spawn devops-monitor (health check)
+  
+  6. Every 2 hours:
+     └─ Send Telegram digest to Drix
+  
+  7. At 08:00:
+     └─ Generate morning report
+```
 
-EXIT CONDITION:
-  - TODO is empty AND no urgent tasks
-  - Session sleeps, cron can spawn it again
+---
+
+## 🚀 AUTO-SPAWN LOGIC (Inside Orchestrator)
+
+### **Orchestrator Spawn Strategy**
+
+```
+ORCHESTRATOR SPAWNS SUBAGENTS (one-shot, they exit when done):
+
+improvement-bot-runner (every 2h):
+  └─ Spawn: sessions_spawn(
+       mode="run",  ← ONE-SHOT (exits when done)
+       task="Scan code, find issues, add to TODO"
+     )
+  └─ Exit: After scan complete (1-2 min)
+
+dev-coder-runner (when TODO non-empty):
+  └─ Orchestrator checks: TODO has [ ] tasks?
+  └─ If YES:
+     └─ Spawn: sessions_spawn(
+          mode="run",  ← ONE-SHOT (exits when TODO empty)
+          task="Implement all [ ] tasks until empty"
+        )
+  └─ Exit: When all [ ] tasks completed or TODO empty
+
+code-auditor-runner (every 4h):
+  └─ Spawn: sessions_spawn(
+       mode="run",
+       task="Review commits, find bugs, add to TODO"
+     )
+  └─ Exit: After audit complete
+
+devops-monitor-runner (every 6h):
+  └─ Spawn: sessions_spawn(
+       mode="run",
+       task="Check bot health, update metrics"
+     )
+  └─ Exit: After health check complete
+```
+
+### **How Orchestrator Ensures 24/7**
+
+```
+ORCHESTRATOR (persistent session, never exits):
+
+While True:
+  1. Every 2 hours:
+     ├─ Spawn improvement-bot (one-shot)
+     ├─ Wait for it to exit
+     ├─ Check TODO
+     ├─ If TODO has tasks: Spawn dev-coder
+     └─ dev-coder runs until TODO empty
+  
+  2. Every 30 minutes:
+     ├─ Health check: is dev-coder running?
+     ├─ If running: all good, continue
+     └─ If NOT running + TODO has tasks: spawn new dev-coder
+  
+  3. Every 4 hours:
+     ├─ Spawn code-auditor
+     ├─ Wait for exit
+  
+  4. Every 6 hours:
+     ├─ Spawn devops-monitor
+     ├─ Wait for exit
+  
+  5. Every 2 hours:
+     ├─ Send Telegram status to Drix
+  
+  6. At 08:00:
+     ├─ Generate morning report
+  
+  7. REPEAT FOREVER (until manual kill)
 ```
 
 ---
@@ -301,57 +271,65 @@ Drix can see in real-time:
 
 ---
 
-## ✅ GUARANTIES (Noir sur Blanc)
+## ✅ GUARANTIES (Noir sur Blanc) - PATCHED
 
-### **1. Someone is Always Coding**
+### **1. Orchestrator NEVER Exits**
 ```
-IF dev-coder is NOT running AND tasks exist in TODO:
-  └─ Spawn new dev-coder within 30 minutes (max)
-  └─ Usually within 2 minutes (improvement-bot triggers it)
+Orchestrator spawned ONCE in mode="session" (persistent)
+  └─ Runs 24/7 until manual kill
+  └─ Respawns all subagents automatically
+  └─ Zero downtime guaranteed
 
-DOWNTIME: 0 minutes (in practice) to 30 minutes (worst case)
-```
-
-### **2. If Anyone Crashes, They're Replaced**
-```
-Health check runs every 30 minutes.
-If process died:
-  └─ Spawn replacement immediately
-  └─ Same session, same tasks, zero loss
-
-Crash-to-recovery time: 2-5 minutes
+How it works:
+  - Orchestrator is the "main loop"
+  - All other agents are one-shot (spawned on demand)
+  - Orchestrator manages respawning logic
 ```
 
-### **3. New Work is Found Automatically**
+### **2. Dev-Coder Always Works When Needed**
 ```
-improvement-bot runs every 2 hours.
-If new issues found:
-  └─ Automatically triggers dev-coder if idle
-  └─ New tasks added to TODO instantly
+Dev-coder spawned by orchestrator when:
+  ├─ improvement-bot finds new tasks
+  └─ Every 2 hours (check if TODO has work)
 
-Response time: 2-5 minutes after scan completes
-```
+Dev-coder exits when:
+  └─ All [ ] TODO tasks completed OR timeout reached
 
-### **4. Code Quality is Maintained**
-```
-code-auditor reviews EVERY push.
-If bug found:
-  ├─ Critical: revert + alert + force fix
-  └─ Minor: add to TODO, next dev will fix
-
-Audit turnaround: immediate to 4 hours (next audit cycle)
+Orchestrator checks: if TODO non-empty + dev-coder not running
+  └─ Respawn immediately
+  
+GUARANTEE: If there's work, someone codes it within 5 min
 ```
 
-### **5. Drix Knows Everything That Happens**
+### **3. If Any Agent Crashes, Orchestrator Respawns It**
 ```
-Alerts sent for:
-  ✓ Tasks completed
-  ✓ Bugs found
-  ✓ Crashes (+ recovery)
-  ✓ Health issues
-  ✓ Daily summary
+Orchestrator health check (every 30 min):
+  ├─ Is dev-coder running? (if it should be)
+  ├─ Any subagent stuck? (timeout check)
+  └─ If yes to either: respawn immediately
 
-No surprises. Full visibility 24/7.
+Crash-to-recovery: <2 minutes
+```
+
+### **4. Code Quality Always Checked**
+```
+code-auditor spawned every 4 hours
+  └─ Reviews all commits since last run
+  └─ Flags bugs → added to TODO
+  └─ Critical bugs: revert + force fix
+
+Audit turnaround: complete within 4h window
+```
+
+### **5. Drix Knows Everything**
+```
+Orchestrator sends Telegram updates:
+  ✓ Every 2 hours: scan results
+  ✓ On crashes: immediate recovery alert
+  ✓ Every 6 hours: health report
+  ✓ At 08:00: morning full report
+
+No surprises. Full visibility.
 ```
 
 ---
@@ -428,59 +406,59 @@ No surprises. Full visibility 24/7.
 
 ---
 
-## 🔧 CONFIGURATION FILES NEEDED
+## 🔧 IMPLEMENTATION ARCHITECTURE (CORRECTED)
 
-### **1. `.openclaw/cron-schedule.json`**
-```json
-{
-  "cron_jobs": [
-    {
-      "name": "improvement-bot-scan",
-      "schedule": "0 */2 * * *",
-      "timeout_minutes": 60,
-      "action": "spawn_improvement_bot",
-      "notify_on_timeout": true
-    },
-    {
-      "name": "dev-coder-health-check",
-      "schedule": "*/30 * * * *",
-      "timeout_minutes": 5,
-      "action": "check_and_recover_dev_coder",
-      "respawn_if_dead": true
-    },
-    {
-      "name": "code-auditor-deep-dive",
-      "schedule": "0 */4 * * *",
-      "timeout_minutes": 120,
-      "action": "audit_all_recent_commits",
-      "alert_on_critical_bugs": true
-    },
-    {
-      "name": "devops-monitor-check",
-      "schedule": "0 */6 * * *",
-      "timeout_minutes": 30,
-      "action": "check_bot_health",
-      "create_ticket_on_issues": true
-    },
-    {
-      "name": "daily-report",
-      "schedule": "0 8 * * *",
-      "timeout_minutes": 30,
-      "action": "generate_night_report",
-      "send_to_drix": true
-    }
-  ]
-}
+### **How It Actually Works**
+
+**Step 1: Spawn Orchestrator ONCE (manual, at launch)**
+```bash
+sessions_spawn(
+  label="orchestrator-master",
+  runtime="subagent",
+  mode="session",  ← PERSISTENT (never exits)
+  task="Manage all agent spawning 24/7"
+)
 ```
 
-### **2. `./memecoin-bot-project/AGENT_WORKFLOW.md`**
-This file (the guarantees + architecture)
+**Step 2: Orchestrator Runs Forever**
+```
+ORCHESTRATOR MAIN LOOP (inside persistent session):
 
-### **3. `./memecoin-bot-project/AGENT_TEAM.md`**
-Responsibilities of each agent + expectations
+While True:
+  1. Check time
+  2. If 2h interval: spawn improvement-bot (one-shot)
+  3. If improvement-bot done + TODO has tasks: spawn dev-coder (one-shot)
+  4. If 30m interval: health-check all subagents
+  5. If 4h interval: spawn code-auditor (one-shot)
+  6. If 6h interval: spawn devops-monitor (one-shot)
+  7. At 08:00: spawn morning-report (one-shot)
+  8. Every 2h: send Telegram status
+  9. Sleep 5 minutes
+  10. Go to step 1
+```
 
-### **4. `./memecoin-bot-project/NOTION_SYNC.md`**
-How agents update Notion in real-time
+**Step 3: All Other Agents Spawned On Demand**
+```
+improvement-bot
+  ├─ Spawned: every 2h by orchestrator
+  ├─ Mode: run (one-shot)
+  ├─ Exit: when scan done (1-2 min)
+
+dev-coder
+  ├─ Spawned: when TODO has [ ] tasks
+  ├─ Mode: run (one-shot)
+  ├─ Exit: when TODO empty or 4h timeout
+
+code-auditor
+  ├─ Spawned: every 4h by orchestrator
+  ├─ Mode: run (one-shot)
+  ├─ Exit: when audit done
+
+devops-monitor
+  ├─ Spawned: every 6h by orchestrator
+  ├─ Mode: run (one-shot)
+  ├─ Exit: when health check done
+```
 
 ---
 
@@ -506,13 +484,55 @@ Result: 8 hours of uninterrupted coding
 
 ---
 
-## 🚀 NEXT STEPS
+## 🎯 NEXT STEPS (CORRECTED)
 
-1. ✅ This file explains the architecture
-2. ⏳ Create AGENT_TEAM.md (roles + responsibilities)
-3. ⏳ Create NOTION_SYNC.md (real-time updates)
-4. ⏳ Deploy cron jobs (OpenClaw gateway)
-5. ⏳ Spawn first improvement-bot manually
-6. ⏳ Drix sleeps, agents work 🌙
+1. ✅ AGENT_WORKFLOW_24H.md patched (orchestrator pattern)
+2. ⏳ Spawn orchestrator-master (ONE TIME, persistent)
+3. ⏳ Orchestrator takes over all scheduling
+4. ⏳ Drix sleeps, orchestrator manages everything
+5. ⏳ All agents spawned on-demand by orchestrator
 
-**Ready?**
+**Result: TRUE 24/7 continuous operation**
+
+---
+
+## 🌙 WHAT REALLY HAPPENS (Corrected)
+
+```
+21:25 - Spawn orchestrator-master (persistent, never exits)
+        └─ Inside: main loop starts
+
+21:25 - Orchestrator spawns improvement-bot (one-shot)
+        └─ Scans code, finds 27 issues, exits
+
+21:30 - Orchestrator sees TODO has tasks
+        └─ Spawns dev-coder (one-shot)
+
+21:35 - dev-coder working on Phase 3
+        
+23:00 - dev-coder still working
+
+23:15 - Orchestrator 2h timer fires
+        └─ dev-coder still running? YES, don't interrupt
+        └─ Next iteration
+
+00:00 - dev-coder still working
+
+02:00 - Orchestrator 2h timer fires
+        └─ dev-coder still running? YES, don't interrupt
+        
+04:00 - Orchestrator 4h timer fires
+        └─ Spawn code-auditor (one-shot)
+        └─ dev-coder still running in parallel
+
+06:00 - Orchestrator 6h timer fires
+        └─ Spawn devops-monitor (one-shot)
+
+08:00 - Orchestrator morning report
+        └─ dev-coder still working (TODO not empty)
+
+Entire night: ZERO DOWNTIME
+             Orchestrator never stopped
+             Subagents spawned on schedule
+             Work never paused
+```

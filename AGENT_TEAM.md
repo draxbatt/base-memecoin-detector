@@ -1,14 +1,72 @@
-# 🤖 AGENT TEAM - Rôles & Responsabilités
+# 🤖 AGENT TEAM - Rôles & Responsabilités (PATCHED)
 
-**Équipe:** 4 agents spécialisés
+**Architecture:** Orchestrator-Master (persistent) spawns subagents (one-shot)
 **Mission:** Développement continu 24/7 sans interruption
 **Coordination:** Via TODO list + Notion + Git
 
 ---
 
-## 👨‍💻 AGENT 1: dev-coder (Le Développeur)
+## 🎭 AGENT 0: orchestrator-master (Le Chef d'Orchestre)
+
+### Responsabilités
+- [ ] Tourne 24/7 en mode persistent (never exits)
+- [ ] Gère les timers pour tous les autres agents
+- [ ] Respawn improvement-bot chaque 2h
+- [ ] Respawn dev-coder quand TODO non-empty
+- [ ] Respawn code-auditor chaque 4h
+- [ ] Respawn devops-monitor chaque 6h
+- [ ] Health check chaque 30 min
+- [ ] Envoyer rapports Telegram chaque 2h
+- [ ] Gérer crashes + recovery auto
+
+### Workflow Principal
+
+```
+ORCHESTRATOR MAIN LOOP (runs forever):
+
+While True:
+  1. Check if 2h timer fired
+     └─ Spawn improvement-bot (one-shot)
+     └─ improvement-bot does its job, exits
+  
+  2. Check if improvement-bot just exited
+     └─ Read BOT_PROJECT_TODO.md
+     └─ If [ ] unchecked tasks exist:
+        └─ Spawn dev-coder (one-shot)
+  
+  3. Check if 30m timer fired (health check)
+     └─ Is dev-coder running? (if it should be)
+     └─ Are other subagents stuck?
+     └─ If yes to either: respawn immediately
+  
+  4. Check if 4h timer fired
+     └─ Spawn code-auditor (one-shot)
+  
+  5. Check if 6h timer fired
+     └─ Spawn devops-monitor (one-shot)
+  
+  6. Check if 08:00 (morning time)
+     └─ Spawn morning-report generator
+  
+  7. Every 2h:
+     └─ Send Telegram status to Drix
+     └─ "2h status: dev-coder working, found 3 issues"
+  
+  8. Sleep 5 minutes, go to step 1
+```
+
+### Exit Condition: NEVER (except manual kill)
+
+```
+Orchestrator is designed to:
+  ✓ Survive subagent crashes
+  ✓ Respawn on demand
+  ✓ Never exit until killed manually
+  ✓ Maintain state across spawns
+```
 
 ### Responsabilités Principales
+- [ ] Spawned par orchestrator quand TODO a [ ] unchecked tasks
 - [ ] Lire `BOT_PROJECT_TODO.md` toutes les 5 minutes
 - [ ] Implémenter les tâches dans l'ordre de priorité
 - [ ] Écrire du code propre, testé, commenté
@@ -17,10 +75,13 @@
 - [ ] Attendre audit de code-auditor
 - [ ] Apporter les corrections si audit échoue
 - [ ] Merger après audit pass ✓
+- [ ] Exit gracefully quand TODO empty
 
 ### Workflow Détaillé
 
 ```
+SESSION STARTS (spawned by orchestrator when TODO non-empty)
+
 LOOP INFINI:
   1. Check BOT_PROJECT_TODO.md
      └─ Get first [ ] unchecked task
@@ -51,13 +112,14 @@ LOOP INFINI:
         └─ Loop until PASS
   
   3. If NO tasks:
-     ├─ Check if improvement-bot will run soon
-     ├─ If <30 min: WAIT (sleep 5 min, check again)
-     ├─ If >30 min: EXIT gracefully
-     └─ Next cron can spawn new session
+     ├─ Orchestrator will respawn if new work found
+     └─ EXIT gracefully
 
-TIMEOUT: Never work >4 hours on single task
-         If stuck: ask improvement-bot for guidance
+SPAWN CONDITION: Orchestrator sees TODO non-empty
+EXIT CONDITION: TODO is empty OR 4h timeout reached
+
+TIMEOUT: Never work >4 hours continuously
+         If stuck: orchestrator will respawn fresh dev-coder
 ```
 
 ### Code Quality Standards
@@ -270,20 +332,19 @@ Daily audit metrics:
 ## 💡 AGENT 3: improvement-bot (L'Optimiseur)
 
 ### Responsabilités Principales
-- [ ] Scan codebase toutes les 2 heures
-- [ ] Identifier problèmes, opportunités, tech debt
-- [ ] Ajouter tâches au TODO
-- [ ] Générer rapports de qualité
-- [ ] Suggérer optimisations
-- [ ] Spawner dev-coder si travail disponible
-- [ ] Envoyer digests à Drix
+- [ ] Spawned par orchestrator chaque 2 heures
+- [ ] Scanner le codebase pour issues
+- [ ] Trouver bugs, perf problems, security issues, tech debt
+- [ ] Ajouter findings à BOT_PROJECT_TODO.md
+- [ ] Envoyer digest à Drix
+- [ ] Exit après scan complet
 
 ### Workflow Détaillé
 
 ```
-CRON TRIGGER: 0 */2 * * * (toutes les 2 heures)
+SESSION STARTS (spawned by orchestrator every 2h)
 
-SCANNING PHASE (30 minutes):
+SCAN PHASE (30 minutes):
   
   1. Code Quality Scan:
      ├─ Test coverage: target >80%
@@ -327,33 +388,14 @@ TASK CREATION:
        [ ] Code: Refactor token-analyzer for performance
            Priority: Medium
            Effort: 2 hours
-           Issue: analyzer takes 3s/token, target <1s
-           Criteria:
-             - Performance: <1s per token
-             - Coverage: maintain >80%
-             - No functional changes
-
-SPAWNING:
-  3. Check if dev-coder is running
-     ├─ If YES: don't spawn, continue
-     └─ If NO:
-        ├─ Check TODO count
-        ├─ If tasks >0: SPAWN dev-coder
-        └─ If tasks=0: exit (wait for next cron)
 
 REPORTING:
-  4. Send digest to Drix:
-     ├─ Summary: "Scan complete, found 3 issues"
-     ├─ New tasks: list of added tasks
-     ├─ Quality trend: "Improving" / "Stable" / "Declining"
-     ├─ Metrics snapshot:
-     │   ├─ Test coverage: 82%
-     │   ├─ Code complexity: avg 12
-     │   ├─ Performance: avg 2.1s/token
-     │   └─ Security: 0 issues
-     └─ Recommendations: "Refactor X for Y benefit"
+  - Send digest to Drix (Telegram)
+  - Update Notion AUDIT_LOG
+  - Exit gracefully when complete
 
-LOOP CONTINUES every 2 hours
+SPAWN CONDITION: Called every 2h by orchestrator
+EXIT CONDITION: Scan complete (1-2 min)
 ```
 
 ### Improvement Categories
