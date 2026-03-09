@@ -409,14 +409,18 @@
   - [x] Test scoring engine (verify weights applied correctly) → `tests/scoring.test.ts` ✅ 15 tests
   - [x] Test Telegram formatter (verify message structure) → Part of integration
   - [x] Target: >80% code coverage → Currently 84.69% code coverage ✅
-  - **Deliverable:** `npm test` passes ✅ **67/67 TESTS PASS**
+  - **Deliverable:** `npm test` passes ✅ **77/77 TESTS PASS**
 
-- [ ] **Integration Tests**
-  - [ ] Test full flow: scrape → analyze → score → alert (with test data)
-  - [ ] Verify database persistence (insert/query)
-  - [ ] Test error recovery (API failures, retries)
-  - [ ] Test graceful shutdown
-  - **Deliverable:** End-to-end flow working
+- [x] **Integration Tests**
+  - [x] Test full flow: scrape → analyze → score → alert (with test data) → `tests/integration.test.ts` ✅ 10 tests
+  - [x] Verify database persistence (insert/query) ✅
+  - [x] Test error recovery (API failures, retries) ✅
+  - [x] Test graceful shutdown ✅
+  - [x] Test token deduplication ✅
+  - [x] Test score threshold enforcement ✅
+  - [x] Test concurrent token processing ✅
+  - [x] Test data validation ✅
+  - **Deliverable:** End-to-end flow working ✅
 
 - [ ] **Manual Testing (with Drix)**
   - [ ] Run bot locally for 30 minutes
