@@ -1,0 +1,1 @@
+{"version":3,"file":"creator-history.d.ts","sourceRoot":"","sources":["../../src/analyzers/creator-history.ts"],"names":[],"mappings":"AAAA;;;GAGG;AACH,qBAAa,OAAO;IAClB,OAAO,CAAC,WAAW,CAAS;;IAM5B;;OAEG;IACH,OAAO,CAAC,IAAI;IAKZ;;OAEG;IACH,OAAO,IAAI,OAAO;IAIlB;;OAEG;IACG,OAAO,IAAI,OAAO,CAAC,IAAI,CAAC;IAO9B;;OAEG;IACG,QAAQ,IAAI,OAAO,CAAC,IAAI,CAAC;CAIhC"}
