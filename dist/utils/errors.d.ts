@@ -16,4 +16,7 @@ export declare class RateLimitError extends BotError {
     retryAfter: number;
     constructor(message: string, retryAfter: number, context?: Record<string, any>);
 }
+export declare class BlockchainError extends BotError {
+    constructor(message: string, context?: Record<string, any>);
+}
 //# sourceMappingURL=errors.d.ts.map

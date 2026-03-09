@@ -9,7 +9,7 @@ const ethers_1 = require("ethers");
 const logger_1 = __importDefault(require("./logger"));
 const errors_1 = require("./errors");
 /**
- * ERC-20 Token ABI - Core function signatures for token interaction
+ * ERC-20 Token ABI
  */
 const ERC20_ABI = [
     'function balanceOf(address account) external view returns (uint256)',
@@ -20,7 +20,7 @@ const ERC20_ABI = [
     'event Transfer(address indexed from, address indexed to, uint256 value)',
 ];
 /**
- * Uniswap V2 Pair ABI - For liquidity pool queries
+ * Uniswap V2 Pair ABI
  */
 const UNISWAP_V2_PAIR_ABI = [
     'function getReserves() external view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast)',
@@ -32,23 +32,14 @@ const UNISWAP_V2_PAIR_ABI = [
  * Rate limiter for RPC requests
  */
 class RateLimiter {
-    /**
-     * Initialize rate limiter
-     * @param maxRequestsPerSecond Maximum allowed requests per second
-     */
     constructor(maxRequestsPerSecond = 300) {
         this.requestTimestamps = [];
         this.maxRequestsPerSecond = maxRequestsPerSecond;
     }
-    /**
-     * Wait if rate limit would be exceeded
-     */
     async waitIfNeeded() {
         const now = Date.now();
         const oneSecondAgo = now - 1000;
-        // Remove old timestamps outside the 1-second window
         this.requestTimestamps = this.requestTimestamps.filter((ts) => ts > oneSecondAgo);
-        // If at limit, calculate wait time
         if (this.requestTimestamps.length >= this.maxRequestsPerSecond) {
             const oldestTimestamp = this.requestTimestamps[0];
             const waitTime = oldestTimestamp + 1000 - now;
@@ -57,26 +48,18 @@ class RateLimiter {
                 await new Promise((resolve) => setTimeout(resolve, waitTime));
             }
         }
-        // Record this request
         this.requestTimestamps.push(Date.now());
     }
 }
 exports.RateLimiter = RateLimiter;
 /**
  * RPC Provider Manager with failover and rate limiting
- * Manages multiple RPC endpoints for Base chain blockchain interaction
  */
 class RPCProvider {
-    /**
-     * Initialize RPC Provider Manager
-     * @param maxRequestsPerSecond Max RPC requests per second (default: 300)
-     */
     constructor(maxRequestsPerSecond = 300) {
         this.providers = new Map();
         this.activeProviderName = null;
-        this.healthCheckInterval = 60000; // 1 minute
         this.lastHealthCheck = new Map();
-        // Default RPC endpoints
         this.DEFAULT_PROVIDERS = {
             alchemy: process.env.ALCHEMY_RPC_URL || 'https://base-mainnet.g.alchemy.com/v2/demo',
             infura: process.env.INFURA_RPC_URL || 'https://base-mainnet.infura.io/v3/demo',
@@ -90,20 +73,11 @@ class RPCProvider {
             providersCount: this.providers.size,
         });
     }
-    /**
-     * Initialize default RPC providers
-     */
     initializeDefaultProviders() {
         for (const [name, url] of Object.entries(this.DEFAULT_PROVIDERS)) {
             this.addProvider(name, url);
         }
     }
-    /**
-     * Add a new RPC provider
-     * @param name Provider identifier
-     * @param url RPC endpoint URL
-     * @throws APIError if provider initialization fails
-     */
     addProvider(name, url) {
         if (!url || typeof url !== 'string') {
             throw new errors_1.APIError('Invalid RPC URL', { name, url });
@@ -124,19 +98,9 @@ class RPCProvider {
             });
         }
     }
-    /**
-     * Get a specific provider by name
-     * @param name Provider identifier
-     * @returns ethers Provider instance or undefined
-     */
     getProvider(name) {
         return this.providers.get(name);
     }
-    /**
-     * Get active provider with automatic failover
-     * @returns Active ethers Provider instance
-     * @throws BlockchainError if no providers available
-     */
     getActiveProvider() {
         if (!this.activeProviderName) {
             throw new errors_1.BlockchainError('No active RPC provider available');
@@ -147,19 +111,9 @@ class RPCProvider {
         }
         return provider;
     }
-    /**
-     * Get current active provider name
-     * @returns Provider name
-     */
     getActiveProviderName() {
         return this.activeProviderName || 'none';
     }
-    /**
-     * Test connection to a provider with retry logic
-     * @param name Provider identifier
-     * @param retries Number of retry attempts
-     * @returns True if connected, false otherwise
-     */
     async testConnection(name, retries = 3) {
         const provider = this.providers.get(name);
         if (!provider) {
@@ -189,7 +143,6 @@ class RPCProvider {
                     isLastAttempt,
                 });
                 if (!isLastAttempt) {
-                    // Exponential backoff: 100ms, 200ms, 400ms
                     const delay = Math.pow(2, attempt) * 100;
                     await new Promise((resolve) => setTimeout(resolve, delay));
                 }
@@ -197,10 +150,6 @@ class RPCProvider {
         }
         return false;
     }
-    /**
-     * Failover to next healthy provider
-     * @returns True if failover successful, false if no healthy providers
-     */
     async failoverToNextProvider() {
         const providerNames = Array.from(this.providers.keys());
         const currentIndex = providerNames.indexOf(this.activeProviderName || '');
@@ -219,11 +168,6 @@ class RPCProvider {
         logger_1.default.error('Failover failed: no healthy providers available');
         return false;
     }
-    /**
-     * Get current block number
-     * @returns Block number with retry logic
-     * @throws BlockchainError on failure after retries
-     */
     async getBlockNumber(retries = 3) {
         for (let attempt = 0; attempt < retries; attempt++) {
             try {
@@ -254,10 +198,6 @@ class RPCProvider {
         }
         throw new errors_1.BlockchainError('Unexpected error in getBlockNumber');
     }
-    /**
-     * Get gas price from network
-     * @returns Gas price in wei
-     */
     async getGasPrice() {
         try {
             const provider = this.getActiveProvider();
@@ -271,11 +211,6 @@ class RPCProvider {
             });
         }
     }
-    /**
-     * Get token decimals via ERC-20
-     * @param tokenAddress Token contract address
-     * @returns Token decimals
-     */
     async getTokenDecimals(tokenAddress) {
         if (!this.isValidAddress(tokenAddress)) {
             throw new errors_1.BlockchainError('Invalid token address', { tokenAddress });
@@ -294,11 +229,6 @@ class RPCProvider {
             });
         }
     }
-    /**
-     * Get token total supply
-     * @param tokenAddress Token contract address
-     * @returns Total supply as bigint
-     */
     async getTokenTotalSupply(tokenAddress) {
         if (!this.isValidAddress(tokenAddress)) {
             throw new errors_1.BlockchainError('Invalid token address', { tokenAddress });
@@ -317,12 +247,6 @@ class RPCProvider {
             });
         }
     }
-    /**
-     * Get token balance of an account
-     * @param tokenAddress Token contract address
-     * @param accountAddress Account address
-     * @returns Balance as bigint
-     */
     async getTokenBalance(tokenAddress, accountAddress) {
         if (!this.isValidAddress(tokenAddress)) {
             throw new errors_1.BlockchainError('Invalid token address', { tokenAddress });
@@ -345,13 +269,6 @@ class RPCProvider {
             });
         }
     }
-    /**
-     * Get top token holders via eth_getLogs (Transfer events)
-     * @param tokenAddress Token contract address
-     * @param blockRange How many blocks to look back (default: 10000)
-     * @param limit Maximum number of holders to return
-     * @returns Array of [address, balance] tuples
-     */
     async getTopHolders(tokenAddress, blockRange = 10000, limit = 20) {
         if (!this.isValidAddress(tokenAddress)) {
             throw new errors_1.BlockchainError('Invalid token address', { tokenAddress });
@@ -361,7 +278,6 @@ class RPCProvider {
             await this.rateLimiter.waitIfNeeded();
             const currentBlock = await provider.getBlockNumber();
             const fromBlock = Math.max(0, currentBlock - blockRange);
-            // Query Transfer events (from all addresses)
             const transferFilter = {
                 address: tokenAddress,
                 topics: [ethers_1.ethers.id('Transfer(address,address,uint256)')],
@@ -370,188 +286,133 @@ class RPCProvider {
             };
             await this.rateLimiter.waitIfNeeded();
             const logs = await provider.getLogs(transferFilter);
-            // Extract unique recipient addresses
             const holderSet = new Set();
-            for (const log, { 
-            // topics[2] is the recipient address in Transfer events
-            if:  }; (log.topics.length >= 3); {
-                const: recipient = ethers_1.ethers.getAddress('0x' + log.topics[2].substring(26)),
-                holderSet, : .add(recipient)
-            })
-                ;
-        }
-        // Get balances for top holders
-        finally {
-        }
-        // Get balances for top holders
-        const holders = [];
-        for (const address of Array.from(holderSet).slice(0, limit * 2)) {
-            try {
-                const balance = await this.getTokenBalance(tokenAddress, address);
-                if (balance > 0n) {
-                    holders.push([address, balance]);
+            for (const log of logs) {
+                const logObj = log;
+                if (logObj.topics.length >= 3) {
+                    const recipient = ethers_1.ethers.getAddress('0x' + logObj.topics[2].substring(26));
+                    holderSet.add(recipient);
                 }
             }
-            catch {
-                // Skip addresses we can't query
-                continue;
+            const holders = [];
+            for (const address of Array.from(holderSet).slice(0, limit * 2)) {
+                try {
+                    const balance = await this.getTokenBalance(tokenAddress, address);
+                    if (balance > 0n) {
+                        holders.push([address, balance]);
+                    }
+                }
+                catch {
+                    continue;
+                }
+            }
+            holders.sort(([, balanceA], [, balanceB]) => {
+                return balanceB > balanceA ? 1 : -1;
+            });
+            return holders.slice(0, limit);
+        }
+        catch (error) {
+            throw new errors_1.BlockchainError('Failed to get top holders', {
+                error: error.message,
+                tokenAddress,
+                blockRange,
+            });
+        }
+    }
+    async getUniswapV2Reserves(pairAddress) {
+        if (!this.isValidAddress(pairAddress)) {
+            throw new errors_1.BlockchainError('Invalid pair address', { pairAddress });
+        }
+        try {
+            const provider = this.getActiveProvider();
+            await this.rateLimiter.waitIfNeeded();
+            const contract = new ethers_1.ethers.Contract(pairAddress, UNISWAP_V2_PAIR_ABI, provider);
+            const [reserve0, reserve1] = await contract.getReserves();
+            return [BigInt(reserve0), BigInt(reserve1)];
+        }
+        catch (error) {
+            throw new errors_1.BlockchainError('Failed to get Uniswap V2 reserves', {
+                error: error.message,
+                pairAddress,
+            });
+        }
+    }
+    async getUniswapV2Tokens(pairAddress) {
+        if (!this.isValidAddress(pairAddress)) {
+            throw new errors_1.BlockchainError('Invalid pair address', { pairAddress });
+        }
+        try {
+            const provider = this.getActiveProvider();
+            await this.rateLimiter.waitIfNeeded();
+            const contract = new ethers_1.ethers.Contract(pairAddress, UNISWAP_V2_PAIR_ABI, provider);
+            const token0 = await contract.token0();
+            const token1 = await contract.token1();
+            return [token0, token1];
+        }
+        catch (error) {
+            throw new errors_1.BlockchainError('Failed to get Uniswap V2 token addresses', {
+                error: error.message,
+                pairAddress,
+            });
+        }
+    }
+    async isLiquidityLocked(lpTokenAddress, threshold = 1000n) {
+        if (!this.isValidAddress(lpTokenAddress)) {
+            throw new errors_1.BlockchainError('Invalid LP token address', {
+                lpTokenAddress,
+            });
+        }
+        try {
+            const deadAddress = '0x000000000000000000000000000000000000dEaD';
+            const zeroAddress = '0x0000000000000000000000000000000000000000';
+            const deadBalance = await this.getTokenBalance(lpTokenAddress, deadAddress);
+            if (deadBalance > threshold) {
+                return true;
+            }
+            const zeroBalance = await this.getTokenBalance(lpTokenAddress, zeroAddress);
+            if (zeroBalance > threshold) {
+                return true;
+            }
+            return false;
+        }
+        catch (error) {
+            throw new errors_1.BlockchainError('Failed to check liquidity lock status', {
+                error: error.message,
+                lpTokenAddress,
+            });
+        }
+    }
+    isValidAddress(address) {
+        return /^0x[a-fA-F0-9]{40}$/.test(address);
+    }
+    maskUrl(url) {
+        return url.replace(/[a-zA-Z0-9_-]{20,}/g, '***');
+    }
+    async getProviderHealth() {
+        const health = {};
+        for (const [name] of this.providers) {
+            const isHealthy = await this.testConnection(name, 1);
+            if (isHealthy) {
+                try {
+                    const provider = this.providers.get(name);
+                    if (provider) {
+                        const blockNumber = await provider.getBlockNumber();
+                        health[name] = { healthy: true, blockNumber };
+                    }
+                }
+                catch {
+                    health[name] = { healthy: false };
+                }
+            }
+            else {
+                health[name] = { healthy: false };
             }
         }
-        // Sort by balance descending
-        holders.sort(([, balanceA], [, balanceB]) => {
-            return balanceB > balanceA ? 1 : -1;
-        });
-        return holders.slice(0, limit);
-    }
-    catch(error) {
-        throw new errors_1.BlockchainError('Failed to get top holders', {
-            error: error.message,
-            tokenAddress,
-            blockRange,
-        });
+        return health;
     }
 }
 exports.RPCProvider = RPCProvider;
-/**
- * Get Uniswap V2 pair reserves
- * @param pairAddress Uniswap V2 pair contract address
- * @returns Reserves as [reserve0, reserve1]
- */
-async;
-getUniswapV2Reserves(pairAddress, string);
-Promise < [bigint, bigint] > {
-    : .isValidAddress(pairAddress)
-};
-{
-    throw new errors_1.BlockchainError('Invalid pair address', { pairAddress });
-}
-try {
-    const provider = this.getActiveProvider();
-    await this.rateLimiter.waitIfNeeded();
-    const contract = new ethers_1.ethers.Contract(pairAddress, UNISWAP_V2_PAIR_ABI, provider);
-    const [reserve0, reserve1] = await contract.getReserves();
-    return [BigInt(reserve0), BigInt(reserve1)];
-}
-catch (error) {
-    throw new errors_1.BlockchainError('Failed to get Uniswap V2 reserves', {
-        error: error.message,
-        pairAddress,
-    });
-}
-/**
- * Get token0 and token1 from Uniswap V2 pair
- * @param pairAddress Uniswap V2 pair contract address
- * @returns [token0Address, token1Address]
- */
-async;
-getUniswapV2Tokens(pairAddress, string);
-Promise < [string, string] > {
-    : .isValidAddress(pairAddress)
-};
-{
-    throw new errors_1.BlockchainError('Invalid pair address', { pairAddress });
-}
-try {
-    const provider = this.getActiveProvider();
-    await this.rateLimiter.waitIfNeeded();
-    const contract = new ethers_1.ethers.Contract(pairAddress, UNISWAP_V2_PAIR_ABI, provider);
-    const token0 = await contract.token0();
-    const token1 = await contract.token1();
-    return [token0, token1];
-}
-catch (error) {
-    throw new errors_1.BlockchainError('Failed to get Uniswap V2 token addresses', {
-        error: error.message,
-        pairAddress,
-    });
-}
-/**
- * Check if liquidity pool is locked (Uniswap V2 LP token burned)
- * @param lpTokenAddress LP token contract address
- * @param threshold Threshold below which to consider locked (default: 1000 wei)
- * @returns True if liquidity appears to be locked
- */
-async;
-isLiquidityLocked(lpTokenAddress, string, threshold, bigint = 1000n);
-Promise < boolean > {
-    : .isValidAddress(lpTokenAddress)
-};
-{
-    throw new errors_1.BlockchainError('Invalid LP token address', {
-        lpTokenAddress,
-    });
-}
-try {
-    const deadAddress = '0x000000000000000000000000000000000000dEaD';
-    const zeroAddress = '0x0000000000000000000000000000000000000000';
-    // Check if dead address has LP tokens
-    const deadBalance = await this.getTokenBalance(lpTokenAddress, deadAddress);
-    if (deadBalance > threshold) {
-        return true;
-    }
-    // Check if zero address has LP tokens
-    const zeroBalance = await this.getTokenBalance(lpTokenAddress, zeroAddress);
-    if (zeroBalance > threshold) {
-        return true;
-    }
-    return false;
-}
-catch (error) {
-    throw new errors_1.BlockchainError('Failed to check liquidity lock status', {
-        error: error.message,
-        lpTokenAddress,
-    });
-}
-isValidAddress(address, string);
-boolean;
-{
-    return /^0x[a-fA-F0-9]{40}$/.test(address);
-}
-maskUrl(url, string);
-string;
-{
-    return url.replace(/[a-zA-Z0-9_-]{20,}/, '***');
-}
-/**
- * Get provider health status
- * @returns Map of provider names to health status
- */
-async;
-getProviderHealth();
-Promise <
-    Map < string, { healthy: boolean, blockNumber: number } >
-    > {
-        const: health = new Map(),
-        : .providers
-    };
-{
-    const isHealthy = await this.testConnection(name, 1);
-    if (isHealthy) {
-        try {
-            const provider = this.providers.get(name);
-            if (provider) {
-                const blockNumber = await provider.getBlockNumber();
-                health.set(name, { healthy: true, blockNumber });
-            }
-        }
-        catch {
-            health.set(name, { healthy: false });
-        }
-    }
-    else {
-        health.set(name, { healthy: false });
-    }
-}
-return health;
-/**
- * Global RPC Provider instance (singleton pattern)
- */
 let rpcProviderInstance = null;
-/**
- * Get or create global RPC Provider instance
- * @param maxRequestsPerSecond Max requests per second (only used on first call)
- * @returns Singleton RPCProvider instance
- */
 function getRPCProvider(maxRequestsPerSecond) {
     if (!rpcProviderInstance) {
         rpcProviderInstance = new RPCProvider(maxRequestsPerSecond);

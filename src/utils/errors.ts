@@ -32,3 +32,11 @@ export class RateLimitError extends BotError {
     this.name = 'RateLimitError';
   }
 }
+
+export class BlockchainError extends BotError {
+  constructor(message: string, context?: Record<string, any>) {
+    super(message, 'BLOCKCHAIN_ERROR', context);
+    this.name = 'BlockchainError';
+  }
+}
+

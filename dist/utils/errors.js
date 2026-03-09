@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.RateLimitError = exports.ValidationError = exports.DatabaseError = exports.APIError = exports.BotError = void 0;
+exports.BlockchainError = exports.RateLimitError = exports.ValidationError = exports.DatabaseError = exports.APIError = exports.BotError = void 0;
 class BotError extends Error {
     constructor(message, code, context) {
         super(message);
@@ -39,4 +39,11 @@ class RateLimitError extends BotError {
     }
 }
 exports.RateLimitError = RateLimitError;
+class BlockchainError extends BotError {
+    constructor(message, context) {
+        super(message, 'BLOCKCHAIN_ERROR', context);
+        this.name = 'BlockchainError';
+    }
+}
+exports.BlockchainError = BlockchainError;
 //# sourceMappingURL=errors.js.map

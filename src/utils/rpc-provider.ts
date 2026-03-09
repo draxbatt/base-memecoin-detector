@@ -3,7 +3,7 @@ import logger from './logger';
 import { BlockchainError, APIError } from './errors';
 
 /**
- * ERC-20 Token ABI - Core function signatures for token interaction
+ * ERC-20 Token ABI
  */
 const ERC20_ABI = [
   'function balanceOf(address account) external view returns (uint256)',
@@ -15,7 +15,7 @@ const ERC20_ABI = [
 ];
 
 /**
- * Uniswap V2 Pair ABI - For liquidity pool queries
+ * Uniswap V2 Pair ABI
  */
 const UNISWAP_V2_PAIR_ABI = [
   'function getReserves() external view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast)',
@@ -31,27 +31,18 @@ export class RateLimiter {
   private readonly maxRequestsPerSecond: number;
   private requestTimestamps: number[] = [];
 
-  /**
-   * Initialize rate limiter
-   * @param maxRequestsPerSecond Maximum allowed requests per second
-   */
   constructor(maxRequestsPerSecond: number = 300) {
     this.maxRequestsPerSecond = maxRequestsPerSecond;
   }
 
-  /**
-   * Wait if rate limit would be exceeded
-   */
   async waitIfNeeded(): Promise<void> {
     const now = Date.now();
     const oneSecondAgo = now - 1000;
 
-    // Remove old timestamps outside the 1-second window
     this.requestTimestamps = this.requestTimestamps.filter(
       (ts) => ts > oneSecondAgo,
     );
 
-    // If at limit, calculate wait time
     if (this.requestTimestamps.length >= this.maxRequestsPerSecond) {
       const oldestTimestamp = this.requestTimestamps[0];
       const waitTime = oldestTimestamp + 1000 - now;
@@ -61,24 +52,20 @@ export class RateLimiter {
       }
     }
 
-    // Record this request
     this.requestTimestamps.push(Date.now());
   }
 }
 
 /**
  * RPC Provider Manager with failover and rate limiting
- * Manages multiple RPC endpoints for Base chain blockchain interaction
  */
 export class RPCProvider {
   private providers: Map<string, ethers.Provider> = new Map();
   private activeProviderName: string | null = null;
   private rateLimiter: RateLimiter;
-  private healthCheckInterval: number = 60000; // 1 minute
   private lastHealthCheck: Map<string, number> = new Map();
 
-  // Default RPC endpoints
-  private readonly DEFAULT_PROVIDERS = {
+  private readonly DEFAULT_PROVIDERS: Record<string, string> = {
     alchemy: process.env.ALCHEMY_RPC_URL || 'https://base-mainnet.g.alchemy.com/v2/demo',
     infura: process.env.INFURA_RPC_URL || 'https://base-mainnet.infura.io/v3/demo',
     ankr: process.env.ANKR_RPC_URL || 'https://rpc.ankr.com/base',
@@ -87,10 +74,6 @@ export class RPCProvider {
       'https://base-mainnet.quicknode.pro/v1/demo',
   };
 
-  /**
-   * Initialize RPC Provider Manager
-   * @param maxRequestsPerSecond Max RPC requests per second (default: 300)
-   */
   constructor(maxRequestsPerSecond: number = 300) {
     this.rateLimiter = new RateLimiter(maxRequestsPerSecond);
     this.initializeDefaultProviders();
@@ -99,21 +82,12 @@ export class RPCProvider {
     });
   }
 
-  /**
-   * Initialize default RPC providers
-   */
   private initializeDefaultProviders(): void {
     for (const [name, url] of Object.entries(this.DEFAULT_PROVIDERS)) {
       this.addProvider(name, url);
     }
   }
 
-  /**
-   * Add a new RPC provider
-   * @param name Provider identifier
-   * @param url RPC endpoint URL
-   * @throws APIError if provider initialization fails
-   */
   addProvider(name: string, url: string): void {
     if (!url || typeof url !== 'string') {
       throw new APIError('Invalid RPC URL', { name, url });
@@ -137,20 +111,10 @@ export class RPCProvider {
     }
   }
 
-  /**
-   * Get a specific provider by name
-   * @param name Provider identifier
-   * @returns ethers Provider instance or undefined
-   */
   getProvider(name: string): ethers.Provider | undefined {
     return this.providers.get(name);
   }
 
-  /**
-   * Get active provider with automatic failover
-   * @returns Active ethers Provider instance
-   * @throws BlockchainError if no providers available
-   */
   getActiveProvider(): ethers.Provider {
     if (!this.activeProviderName) {
       throw new BlockchainError('No active RPC provider available');
@@ -166,24 +130,11 @@ export class RPCProvider {
     return provider;
   }
 
-  /**
-   * Get current active provider name
-   * @returns Provider name
-   */
   getActiveProviderName(): string {
     return this.activeProviderName || 'none';
   }
 
-  /**
-   * Test connection to a provider with retry logic
-   * @param name Provider identifier
-   * @param retries Number of retry attempts
-   * @returns True if connected, false otherwise
-   */
-  async testConnection(
-    name: string,
-    retries: number = 3,
-  ): Promise<boolean> {
+  async testConnection(name: string, retries: number = 3): Promise<boolean> {
     const provider = this.providers.get(name);
     if (!provider) {
       logger.warn(`Provider ${name} not found`);
@@ -214,7 +165,6 @@ export class RPCProvider {
         });
 
         if (!isLastAttempt) {
-          // Exponential backoff: 100ms, 200ms, 400ms
           const delay = Math.pow(2, attempt) * 100;
           await new Promise((resolve) => setTimeout(resolve, delay));
         }
@@ -224,10 +174,6 @@ export class RPCProvider {
     return false;
   }
 
-  /**
-   * Failover to next healthy provider
-   * @returns True if failover successful, false if no healthy providers
-   */
   async failoverToNextProvider(): Promise<boolean> {
     const providerNames = Array.from(this.providers.keys());
     const currentIndex = providerNames.indexOf(
@@ -252,11 +198,6 @@ export class RPCProvider {
     return false;
   }
 
-  /**
-   * Get current block number
-   * @returns Block number with retry logic
-   * @throws BlockchainError on failure after retries
-   */
   async getBlockNumber(retries: number = 3): Promise<number> {
     for (let attempt = 0; attempt < retries; attempt++) {
       try {
@@ -288,10 +229,6 @@ export class RPCProvider {
     throw new BlockchainError('Unexpected error in getBlockNumber');
   }
 
-  /**
-   * Get gas price from network
-   * @returns Gas price in wei
-   */
   async getGasPrice(): Promise<bigint> {
     try {
       const provider = this.getActiveProvider();
@@ -305,11 +242,6 @@ export class RPCProvider {
     }
   }
 
-  /**
-   * Get token decimals via ERC-20
-   * @param tokenAddress Token contract address
-   * @returns Token decimals
-   */
   async getTokenDecimals(tokenAddress: string): Promise<number> {
     if (!this.isValidAddress(tokenAddress)) {
       throw new BlockchainError('Invalid token address', { tokenAddress });
@@ -333,11 +265,6 @@ export class RPCProvider {
     }
   }
 
-  /**
-   * Get token total supply
-   * @param tokenAddress Token contract address
-   * @returns Total supply as bigint
-   */
   async getTokenTotalSupply(tokenAddress: string): Promise<bigint> {
     if (!this.isValidAddress(tokenAddress)) {
       throw new BlockchainError('Invalid token address', { tokenAddress });
@@ -361,12 +288,6 @@ export class RPCProvider {
     }
   }
 
-  /**
-   * Get token balance of an account
-   * @param tokenAddress Token contract address
-   * @param accountAddress Account address
-   * @returns Balance as bigint
-   */
   async getTokenBalance(
     tokenAddress: string,
     accountAddress: string,
@@ -397,13 +318,6 @@ export class RPCProvider {
     }
   }
 
-  /**
-   * Get top token holders via eth_getLogs (Transfer events)
-   * @param tokenAddress Token contract address
-   * @param blockRange How many blocks to look back (default: 10000)
-   * @param limit Maximum number of holders to return
-   * @returns Array of [address, balance] tuples
-   */
   async getTopHolders(
     tokenAddress: string,
     blockRange: number = 10000,
@@ -420,7 +334,6 @@ export class RPCProvider {
       const currentBlock = await provider.getBlockNumber();
       const fromBlock = Math.max(0, currentBlock - blockRange);
 
-      // Query Transfer events (from all addresses)
       const transferFilter = {
         address: tokenAddress,
         topics: [ethers.id('Transfer(address,address,uint256)')],
@@ -431,19 +344,17 @@ export class RPCProvider {
       await this.rateLimiter.waitIfNeeded();
       const logs = await provider.getLogs(transferFilter);
 
-      // Extract unique recipient addresses
       const holderSet = new Set<string>();
-      for (const log: any) {
-        // topics[2] is the recipient address in Transfer events
-        if (log.topics.length >= 3) {
+      for (const log of logs) {
+        const logObj = log as any;
+        if (logObj.topics.length >= 3) {
           const recipient = ethers.getAddress(
-            '0x' + log.topics[2].substring(26),
+            '0x' + logObj.topics[2].substring(26),
           );
           holderSet.add(recipient);
         }
       }
 
-      // Get balances for top holders
       const holders: Array<[string, bigint]> = [];
       for (const address of Array.from(holderSet).slice(0, limit * 2)) {
         try {
@@ -452,12 +363,10 @@ export class RPCProvider {
             holders.push([address, balance]);
           }
         } catch {
-          // Skip addresses we can't query
           continue;
         }
       }
 
-      // Sort by balance descending
       holders.sort(([, balanceA], [, balanceB]) => {
         return balanceB > balanceA ? 1 : -1;
       });
@@ -472,14 +381,7 @@ export class RPCProvider {
     }
   }
 
-  /**
-   * Get Uniswap V2 pair reserves
-   * @param pairAddress Uniswap V2 pair contract address
-   * @returns Reserves as [reserve0, reserve1]
-   */
-  async getUniswapV2Reserves(
-    pairAddress: string,
-  ): Promise<[bigint, bigint]> {
+  async getUniswapV2Reserves(pairAddress: string): Promise<[bigint, bigint]> {
     if (!this.isValidAddress(pairAddress)) {
       throw new BlockchainError('Invalid pair address', { pairAddress });
     }
@@ -502,14 +404,7 @@ export class RPCProvider {
     }
   }
 
-  /**
-   * Get token0 and token1 from Uniswap V2 pair
-   * @param pairAddress Uniswap V2 pair contract address
-   * @returns [token0Address, token1Address]
-   */
-  async getUniswapV2Tokens(
-    pairAddress: string,
-  ): Promise<[string, string]> {
+  async getUniswapV2Tokens(pairAddress: string): Promise<[string, string]> {
     if (!this.isValidAddress(pairAddress)) {
       throw new BlockchainError('Invalid pair address', { pairAddress });
     }
@@ -533,12 +428,6 @@ export class RPCProvider {
     }
   }
 
-  /**
-   * Check if liquidity pool is locked (Uniswap V2 LP token burned)
-   * @param lpTokenAddress LP token contract address
-   * @param threshold Threshold below which to consider locked (default: 1000 wei)
-   * @returns True if liquidity appears to be locked
-   */
   async isLiquidityLocked(
     lpTokenAddress: string,
     threshold: bigint = 1000n,
@@ -553,7 +442,6 @@ export class RPCProvider {
       const deadAddress = '0x000000000000000000000000000000000000dEaD';
       const zeroAddress = '0x0000000000000000000000000000000000000000';
 
-      // Check if dead address has LP tokens
       const deadBalance = await this.getTokenBalance(
         lpTokenAddress,
         deadAddress,
@@ -562,7 +450,6 @@ export class RPCProvider {
         return true;
       }
 
-      // Check if zero address has LP tokens
       const zeroBalance = await this.getTokenBalance(
         lpTokenAddress,
         zeroAddress,
@@ -580,35 +467,16 @@ export class RPCProvider {
     }
   }
 
-  /**
-   * Validate Ethereum address format
-   * @param address Address to validate
-   * @returns True if valid address
-   */
   private isValidAddress(address: string): boolean {
     return /^0x[a-fA-F0-9]{40}$/.test(address);
   }
 
-  /**
-   * Mask RPC URL for logging (hide API keys)
-   * @param url RPC URL
-   * @returns Masked URL
-   */
   private maskUrl(url: string): string {
-    return url.replace(/[a-zA-Z0-9_-]{20,}/, '***');
+    return url.replace(/[a-zA-Z0-9_-]{20,}/g, '***');
   }
 
-  /**
-   * Get provider health status
-   * @returns Map of provider names to health status
-   */
-  async getProviderHealth(): Promise<
-    Map<string, { healthy: boolean; blockNumber?: number }>
-  > {
-    const health = new Map<
-      string,
-      { healthy: boolean; blockNumber?: number }
-    >();
+  async getProviderHealth(): Promise<Record<string, any>> {
+    const health: Record<string, any> = {};
 
     for (const [name] of this.providers) {
       const isHealthy = await this.testConnection(name, 1);
@@ -617,13 +485,13 @@ export class RPCProvider {
           const provider = this.providers.get(name);
           if (provider) {
             const blockNumber = await provider.getBlockNumber();
-            health.set(name, { healthy: true, blockNumber });
+            health[name] = { healthy: true, blockNumber };
           }
         } catch {
-          health.set(name, { healthy: false });
+          health[name] = { healthy: false };
         }
       } else {
-        health.set(name, { healthy: false });
+        health[name] = { healthy: false };
       }
     }
 
@@ -631,16 +499,8 @@ export class RPCProvider {
   }
 }
 
-/**
- * Global RPC Provider instance (singleton pattern)
- */
 let rpcProviderInstance: RPCProvider | null = null;
 
-/**
- * Get or create global RPC Provider instance
- * @param maxRequestsPerSecond Max requests per second (only used on first call)
- * @returns Singleton RPCProvider instance
- */
 export function getRPCProvider(maxRequestsPerSecond?: number): RPCProvider {
   if (!rpcProviderInstance) {
     rpcProviderInstance = new RPCProvider(maxRequestsPerSecond);
