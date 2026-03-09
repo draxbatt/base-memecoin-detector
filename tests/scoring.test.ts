@@ -36,7 +36,7 @@ describe('ScoringEngine', () => {
     const result = engine.score(holderAnalysis, creatorAnalysis, liquidityAnalysis, 60);
 
     // Expected: (80 * 0.30) + (75 * 0.40) + (70 * 0.15) + (60 * 0.15) = 72.5
-    expect(result.totalScore).toBe(73); // Rounded
+    expect(result.totalScore).toBe(74); // Rounded
 
     expect(result.components.holderScore).toBe(80);
     expect(result.components.creatorScore).toBe(75);

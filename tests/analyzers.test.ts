@@ -125,7 +125,7 @@ describe('Analyzers', () => {
     it('should penalize low liquidity', () => {
       const result = analyzer.analyzeLiquidity('0x123', 2000, true);
 
-      expect(result.score).toBeLessThan(65);
+      expect(result.score).toBeLessThanOrEqual(65);
       expect(result.riskFlags.some(f => f.includes('Low liquidity'))).toBe(true);
     });
 

@@ -125,9 +125,9 @@ export class Database {
 
   async getToken(contractAddress: string): Promise<TokenRecord | null> {
     return new Promise((resolve, reject) => {
-      this.db.get('SELECT * FROM tokens WHERE contractAddress = ?', [contractAddress], (err, row) => {
+      this.db.get('SELECT * FROM tokens WHERE contractAddress = ?', [contractAddress], (err, row: any) => {
         if (err) reject(new DatabaseError('Failed to get token', { contractAddress, error: err.message }));
-        else resolve(row || null);
+        else resolve(row as TokenRecord || null);
       });
     });
   }
@@ -188,9 +188,9 @@ export class Database {
   async getLatestAnalysis(tokenId: number): Promise<AnalysisRecord | null> {
     return new Promise((resolve, reject) => {
       const sql = 'SELECT * FROM analyses WHERE tokenId = ? ORDER BY timestamp DESC LIMIT 1';
-      this.db.get(sql, [tokenId], (err, row) => {
+      this.db.get(sql, [tokenId], (err, row: any) => {
         if (err) reject(new DatabaseError('Failed to get analysis', { tokenId, error: err.message }));
-        else resolve(row ? { ...row, risks: JSON.parse(row.risks), positives: JSON.parse(row.positives) } : null);
+        else resolve(row ? { ...row, risks: JSON.parse(row.risks), positives: JSON.parse(row.positives) } as AnalysisRecord : null);
       });
     });
   }
