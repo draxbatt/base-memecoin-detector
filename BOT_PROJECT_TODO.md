@@ -308,7 +308,7 @@
 
 ### Data Scrapers (2 days) — NOW WITH BLOCKERS ADDRESSED
 
-- [x] **RPC Provider Manager** (`src/utils/rpc-provider.ts`) ⚠️ PRIORITY 1
+- [ ] **RPC Provider Manager** (`src/utils/rpc-provider.ts`) ⚠️ PRIORITY 1
   - [ ] Initialize primary RPC (Alchemy)
   - [ ] Setup backup RPC (Infura, Ankr)
   - [ ] Add request rate limiter (max 300 req/sec)
@@ -317,7 +317,7 @@
   - [ ] Add liquidity pool interaction
   - **Deliverable:** RPC utility module ready for all analyzers
 
-- [x] **Clanker Scraper** (`src/scrapers/clanker.ts`) ⚠️ PRIORITY 2
+- [ ] **Clanker Scraper** (`src/scrapers/clanker.ts`) ⚠️ PRIORITY 2
   - [ ] Implement axios HTTP client
   - [ ] Add retry logic (3 retries, exp backoff)
   - [ ] Parse Clanker API response schema
@@ -326,7 +326,7 @@
   - [ ] Unit tests for parser
   - **Deliverable:** Fetches tokens every 10 min
 
-- [x] **Bankr Scraper** (`src/scrapers/bankr.ts`)
+- [ ] **Bankr Scraper** (`src/scrapers/bankr.ts`)
   - [ ] Query RPC for Bankr factory events
   - [ ] Decode event logs → token metadata
   - [ ] Deduplicate vs Clanker
