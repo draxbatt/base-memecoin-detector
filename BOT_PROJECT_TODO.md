@@ -348,7 +348,7 @@
   - [ ] Assign creator risk score
   - **Deliverable:** Can assess creator credibility
 
-- [ ] **Liquidity Analyzer** (`src/analyzers/liquidity.ts`)
+- [x] **Liquidity Analyzer** (`src/analyzers/liquidity.ts`)
   - [ ] Use RPC to check if liquidity locked
   - [ ] Detect burnable tokens
   - [ ] Analyze liquidity depth
