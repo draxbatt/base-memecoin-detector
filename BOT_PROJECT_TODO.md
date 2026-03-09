@@ -326,7 +326,7 @@
   - [ ] Unit tests for parser
   - **Deliverable:** Fetches tokens every 10 min
 
-- [ ] **Bankr Scraper** (`src/scrapers/bankr.ts`)
+- [x] **Bankr Scraper** (`src/scrapers/bankr.ts`)
   - [ ] Query RPC for Bankr factory events
   - [ ] Decode event logs → token metadata
   - [ ] Deduplicate vs Clanker
