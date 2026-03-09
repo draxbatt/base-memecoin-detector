@@ -341,7 +341,7 @@
   - [ ] Unit tests
   - **Deliverable:** Can score holder diversity
 
-- [ ] **Creator History Tracker** (`src/analyzers/creator-history.ts`)
+- [x] **Creator History Tracker** (`src/analyzers/creator-history.ts`)
   - [ ] Query RPC for creator's previous launches
   - [ ] Check for rug pull patterns
   - [ ] Cache results (1-hour TTL)
