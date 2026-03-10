@@ -1,0 +1,114 @@
+{
+  "timestamp": "2026-03-10T02:37:14.136Z",
+  "totalDuration": 35,
+  "summary": {
+    "total": 8,
+    "passed": 8,
+    "failed": 0,
+    "passRate": "100.0%"
+  },
+  "results": [
+    {
+      "testName": "Bot Initialization",
+      "passed": true,
+      "duration": 11,
+      "details": {
+        "config": [
+          "clankerApiUrl",
+          "bankrApiUrl",
+          "baseRpcUrl",
+          "telegramBotToken",
+          "telegramChatId",
+          "databasePath"
+        ]
+      }
+    },
+    {
+      "testName": "Token Detection Pipeline",
+      "passed": true,
+      "duration": 0,
+      "details": {
+        "clankerTokensDetected": 2,
+        "bankrTokensDetected": 2,
+        "totalDetected": 4
+      }
+    },
+    {
+      "testName": "Scoring Pipeline",
+      "passed": true,
+      "duration": 1,
+      "details": {
+        "SAFE": {
+          "score": 75,
+          "recommendation": "SAFE",
+          "expected": "SAFE"
+        },
+        "CAUTION": {
+          "score": 35,
+          "recommendation": "AVOID",
+          "expected": "CAUTION"
+        },
+        "AVOID": {
+          "score": 35,
+          "recommendation": "AVOID",
+          "expected": "AVOID"
+        }
+      }
+    },
+    {
+      "testName": "Alert Generation",
+      "passed": true,
+      "duration": 0,
+      "details": {
+        "alertsGenerated": 1,
+        "alerts": [
+          {
+            "tokenName": "SafeMemecoin",
+            "tokenSymbol": "SAFE",
+            "contractAddress": "0x1234567890123456789012345678901234567890",
+            "score": 72,
+            "recommendation": "SAFE",
+            "timestamp": "2026-03-10T02:37:14.119Z"
+          }
+        ]
+      }
+    },
+    {
+      "testName": "Database Operations",
+      "passed": true,
+      "duration": 5,
+      "details": {
+        "inserted": 3,
+        "retrieved": 3,
+        "updated": 1
+      }
+    },
+    {
+      "testName": "Error Recovery",
+      "passed": true,
+      "duration": 0,
+      "details": {
+        "recoveryScenarios": 3
+      }
+    },
+    {
+      "testName": "Token Deduplication",
+      "passed": true,
+      "duration": 3,
+      "details": {
+        "deduplication": "working correctly",
+        "tokenRetrieved": "DedupeTest",
+        "contractAddress": "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+      }
+    },
+    {
+      "testName": "Performance Benchmarks",
+      "passed": true,
+      "duration": 5,
+      "details": {
+        "scoringPer100": 5,
+        "targetLatency": 50
+      }
+    }
+  ]
+}

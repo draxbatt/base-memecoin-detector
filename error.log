@@ -1,2 +1,4 @@
 {"level":"error","message":"Failover failed: no healthy providers available","service":"memecoin-bot","timestamp":"2026-03-09T22:51:44.572Z"}
 {"level":"error","message":"Failover failed: no healthy providers available","service":"memecoin-bot","timestamp":"2026-03-09T22:53:58.582Z"}
+{"level":"error","message":"   Error: Error: Duplicate token alerted twice","service":"memecoin-bot","timestamp":"2026-03-10T02:36:42.495Z"}
+{"level":"error","message":"   Error: Error: Expected 1 token after upsert, got 3","service":"memecoin-bot","timestamp":"2026-03-10T02:36:58.335Z"}

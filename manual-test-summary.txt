@@ -1,0 +1,31 @@
+
+Manual Testing Suite - Summary Report
+=====================================
+Date: 2026-03-10T02:37:14.136Z
+Duration: 0.0s
+
+Results:
+  Total Tests: 8
+  Passed: 8 ✅
+  Failed: 0 ❌
+  Pass Rate: 100.0%
+
+Tests:
+  ✅ Bot Initialization (11ms)
+  ✅ Token Detection Pipeline (0ms)
+  ✅ Scoring Pipeline (1ms)
+  ✅ Alert Generation (0ms)
+  ✅ Database Operations (5ms)
+  ✅ Error Recovery (0ms)
+  ✅ Token Deduplication (3ms)
+  ✅ Performance Benchmarks (5ms)
+
+Next Steps:
+1. Review results above
+2. If all tests passed, manually test with Drix
+3. Run: npm start (with real Telegram token)
+4. Monitor for 30 minutes: token detection, alert format, scoring accuracy
+5. Verify no false positives (only SAFE score >= 65)
+
+Status: READY FOR MANUAL TESTING ✅
+    
