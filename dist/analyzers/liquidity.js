@@ -1,44 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Service = void 0;
-/**
- * Auto-generated professional implementation
- * Implements core functionality for blockchain analysis
- */
-class Service {
-    constructor() {
-        this.initialized = false;
-        this.init();
-    }
-    /**
-     * Initialize service
-     */
-    init() {
-        console.log(`${this.constructor.name} initialized`);
-        this.initialized = true;
-    }
-    /**
-     * Check if service is ready
-     */
-    isReady() {
-        return this.initialized;
-    }
-    /**
-     * Main execution method
-     */
-    async execute() {
-        if (!this.isReady()) {
-            throw new Error('Service not initialized');
-        }
-        console.log('Service executing...');
-    }
-    /**
-     * Graceful shutdown
-     */
-    async shutdown() {
-        console.log('Service shutting down...');
-        this.initialized = false;
-    }
-}
-exports.Service = Service;
+exports.LiquidityAnalyzer = void 0;
+// This file is deprecated. All implementations are in index.ts
+// For backward compatibility, re-export from index
+var index_1 = require("./index");
+Object.defineProperty(exports, "LiquidityAnalyzer", { enumerable: true, get: function () { return index_1.LiquidityAnalyzer; } });
 //# sourceMappingURL=liquidity.js.map

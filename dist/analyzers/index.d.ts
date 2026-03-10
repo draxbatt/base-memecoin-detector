@@ -1,4 +1,5 @@
 import { TokenOnChainData } from '../scrapers/rpc';
+export type { TokenOnChainData } from '../scrapers/rpc';
 /**
  * Result of holder concentration analysis.
  *

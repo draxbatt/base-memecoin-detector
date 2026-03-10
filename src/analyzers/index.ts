@@ -1,6 +1,9 @@
 import logger from '../utils/logger';
 import { TokenOnChainData } from '../scrapers/rpc';
 
+// Export types for external use
+export type { TokenOnChainData } from '../scrapers/rpc';
+
 /**
  * Result of holder concentration analysis.
  *
