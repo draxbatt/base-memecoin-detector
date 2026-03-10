@@ -2,3 +2,11 @@
 {"level":"error","message":"Failover failed: no healthy providers available","service":"memecoin-bot","timestamp":"2026-03-09T22:53:58.582Z"}
 {"level":"error","message":"   Error: Error: Duplicate token alerted twice","service":"memecoin-bot","timestamp":"2026-03-10T02:36:42.495Z"}
 {"level":"error","message":"   Error: Error: Expected 1 token after upsert, got 3","service":"memecoin-bot","timestamp":"2026-03-10T02:36:58.335Z"}
+{"context":"test","level":"error","message":"Test error message","service":"memecoin-bot","timestamp":"2026-03-10T07:30:38.722Z"}
+{"context":"test","level":"error","message":"Test error message","service":"memecoin-bot","timestamp":"2026-03-10T07:31:16.780Z"}
+{"context":"test","level":"error","message":"Test error message","service":"memecoin-bot","timestamp":"2026-03-10T07:31:46.535Z"}
+{"duration":5000,"error":"connection timeout","level":"error","message":"Processing failed","service":"memecoin-bot","step":"analyze","timestamp":"2026-03-10T07:31:47.417Z","tokenAddress":"0xtest"}
+{"duration":5000,"error":"connection timeout","level":"error","message":"Processing failed","service":"memecoin-bot","step":"analyze","timestamp":"2026-03-10T07:32:13.641Z","tokenAddress":"0xtest"}
+{"context":"test","level":"error","message":"Test error message","service":"memecoin-bot","timestamp":"2026-03-10T07:32:13.824Z"}
+{"duration":5000,"error":"connection timeout","level":"error","message":"Processing failed","service":"memecoin-bot","step":"analyze","timestamp":"2026-03-10T07:32:48.939Z","tokenAddress":"0xtest"}
+{"context":"test","level":"error","message":"Test error message","service":"memecoin-bot","timestamp":"2026-03-10T07:32:49.154Z"}
