@@ -43,7 +43,7 @@ export class MemecoinBot {
   constructor() {
     this.clankerScraper = new ClankerScraper(config.clankerApiUrl);
     this.bankrScraper = new BankrScraper(config.bankrApiUrl);
-    this.rpc = new RpcIntegration(config.baseRpcUrl);
+    this.rpc = new RpcIntegration(config.baseRpcUrl, config.basescanApiKey);
     this.database = new Database(config.databasePath);
     this.walletAnalyzer = new WalletAnalyzer();
     this.creatorAnalyzer = new CreatorHistoryAnalyzer();

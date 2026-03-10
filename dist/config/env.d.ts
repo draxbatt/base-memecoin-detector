@@ -3,6 +3,7 @@ interface Config {
     bankrApiUrl: string;
     baseRpcUrl: string;
     blockExplorerUrl: string;
+    basescanApiKey?: string;
     scoringThreshold: number;
     premiumScoreThreshold: number;
     telegramBotToken: string;

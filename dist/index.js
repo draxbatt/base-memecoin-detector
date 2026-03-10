@@ -37,7 +37,7 @@ class MemecoinBot {
         this.cronJob = null;
         this.clankerScraper = new launchers_1.ClankerScraper(env_1.config.clankerApiUrl);
         this.bankrScraper = new launchers_1.BankrScraper(env_1.config.bankrApiUrl);
-        this.rpc = new rpc_1.RpcIntegration(env_1.config.baseRpcUrl);
+        this.rpc = new rpc_1.RpcIntegration(env_1.config.baseRpcUrl, env_1.config.basescanApiKey);
         this.database = new db_1.Database(env_1.config.databasePath);
         this.walletAnalyzer = new analyzers_1.WalletAnalyzer();
         this.creatorAnalyzer = new analyzers_1.CreatorHistoryAnalyzer();

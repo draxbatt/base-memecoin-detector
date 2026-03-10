@@ -23,6 +23,7 @@ function validateConfig() {
         bankrApiUrl: process.env.BANKR_API_URL || 'https://api.bankr.world',
         baseRpcUrl: process.env.BASE_RPC_URL,
         blockExplorerUrl: process.env.BLOCK_EXPLORER_URL || 'https://basescan.org',
+        basescanApiKey: process.env.BASESCAN_API_KEY,
         scoringThreshold: parseInt(process.env.SCORING_THRESHOLD || '65'),
         premiumScoreThreshold: parseInt(process.env.PREMIUM_SCORE_THRESHOLD || '80'),
         telegramBotToken: process.env.TELEGRAM_BOT_TOKEN,
