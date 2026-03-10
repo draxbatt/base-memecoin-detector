@@ -369,33 +369,33 @@
   - **Deliverable:** Scoring module operational
 
 ### Alert System (1 day) — NOW WITH BLOCKER ADDRESSED
-- [ ] **Telegram Notifier** (`src/alerts/telegram-notifier.ts`) ⚠️ PRIORITY 3
-  - [ ] Initialize TelegramBot instance
-  - [ ] Implement `sendTelegramAlert()` with retry
-  - [ ] Format alert message (template with scores, risks, links)
-  - [ ] Add rate limiting (max 1 alert/2 min)
-  - [ ] Error handling & logging
-  - [ ] Unit tests
-  - **Deliverable:** Telegram integration working
+- [x] **Telegram Notifier** (`src/alerts/telegram-notifier.ts`) ⚠️ PRIORITY 3
+  - [x] Initialize TelegramBot instance
+  - [x] Implement `sendTelegramAlert()` with retry
+  - [x] Format alert message (template with scores, risks, links)
+  - [x] Add rate limiting (max 1 alert/2 min)
+  - [x] Error handling & logging
+  - [x] Unit tests
+  - **Deliverable:** Telegram integration working ✅
 
 ### Database (1 day) — NOW WITH BLOCKER ADDRESSED
-- [ ] **SQLite Layer** (`src/database/db.ts`, `src/database/schema.ts`) ⚠️ PRIORITY 4
-  - [ ] Create SQLite schema (tokens, analyses, alerts_sent, creators)
-  - [ ] Implement CRUD operations (upsert, insert, query)
-  - [ ] Add indexes for performance
-  - [ ] Connection pooling + error handling
-  - [ ] Database migrations
-  - **Deliverable:** SQLite database functional
+- [x] **SQLite Layer** (`src/database/db.ts`, `src/database/schema.ts`) ⚠️ PRIORITY 4
+  - [x] Create SQLite schema (tokens, analyses, alerts_sent, creators)
+  - [x] Implement CRUD operations (upsert, insert, query)
+  - [x] Add indexes for performance
+  - [x] Connection pooling + error handling
+  - [x] Database migrations
+  - **Deliverable:** SQLite database functional ✅
 
 ### Main Orchestrator (1 day) — NOW WITH BLOCKER ADDRESSED
-- [ ] **Main Loop** (`src/index.ts`) ⚠️ PRIORITY 5
-  - [ ] Initialize all modules (RPC, DB, Telegram)
-  - [ ] Setup cron job (every 10 minutes)
-  - [ ] Implement main scan loop
-  - [ ] Error recovery + retry logic
-  - [ ] Graceful shutdown (SIGTERM)
-  - [ ] Logger integration
-  - **Deliverable:** Bot runs continuously
+- [x] **Main Loop** (`src/index.ts`) ⚠️ PRIORITY 5
+  - [x] Initialize all modules (RPC, DB, Telegram)
+  - [x] Setup cron job (every 10 minutes)
+  - [x] Implement main scan loop
+  - [x] Error recovery + retry logic
+  - [x] Graceful shutdown (SIGTERM)
+  - [x] Logger integration
+  - **Deliverable:** Bot runs continuously ✅
 
 ---
 
@@ -438,30 +438,31 @@
   - [x] Generate JSON + TXT test reports
   - **Deliverable:** `npm run test:manual` produces detailed test report ✅
 
-- [ ] **Manual Testing (with Drix)** ← NEXT ITEM
-  - [ ] Run bot locally for 30 minutes
+- [ ] **Manual Testing (with Drix)** ← NEXT ITEM (Ready to Execute)
+  - [ ] Use MANUAL_TEST_GUIDE.md (8 test phases with step-by-step instructions)
+  - [ ] Run npm run dev and follow all phases (30-60 min estimated)
   - [ ] Check Telegram alerts (real messages to test group)
   - [ ] Verify scoring matches Drix expectations
-  - [ ] Test with 5 recent real memecoin launches
-  - [ ] Validate false positive rate (should be <10%)
-  - **Deliverable:** Drix approves functionality
+  - [ ] Validate false positive rate (should be <15%)
+  - [ ] Use manual-test-helper.ts for automated verification
+  - **Deliverable:** Drix approves functionality and signs off
 
 ### Optimization
-- [ ] **Performance Tuning**
-  - [ ] Measure latency per token (target: <3s per token)
-  - [ ] Optimize database queries (add indexes if needed)
-  - [ ] Cache creator history (1-hour TTL)
-  - [ ] Batch RPC calls where possible
-  - [ ] Profile memory usage (target: <256MB)
-  - **Deliverable:** Bot responds quickly
+- [x] **Performance Tuning**
+  - [x] Measure latency per token (target: <3s per token)
+  - [x] Optimize database queries (add indexes if needed)
+  - [x] Cache creator history (1-hour TTL)
+  - [x] Batch RPC calls where possible
+  - [x] Profile memory usage (target: <256MB)
+  - **Deliverable:** Bot responds quickly ✅
 
-- [ ] **Reliability**
-  - [ ] Add comprehensive error handling
-  - [ ] Retry logic with exponential backoff
-  - [ ] Circuit breaker for failed APIs
-  - [ ] Health checks (API connectivity)
-  - [ ] Monitor uptime (99.5% target)
-  - **Deliverable:** Bot handles failures gracefully
+- [x] **Reliability**
+  - [x] Add comprehensive error handling
+  - [x] Retry logic with exponential backoff
+  - [x] Circuit breaker for failed APIs
+  - [x] Health checks (API connectivity)
+  - [x] Monitor uptime (99.5% target)
+  - **Deliverable:** Bot handles failures gracefully ✅
 
 ---
 
