@@ -20,3 +20,7 @@
 {"context":"test","level":"error","message":"Test error message","service":"memecoin-bot","timestamp":"2026-03-10T07:39:49.111Z"}
 {"duration":5000,"error":"connection timeout","level":"error","message":"Processing failed","service":"memecoin-bot","step":"analyze","timestamp":"2026-03-10T07:40:51.413Z","tokenAddress":"0xtest"}
 {"context":"test","level":"error","message":"Test error message","service":"memecoin-bot","timestamp":"2026-03-10T07:40:51.754Z"}
+{"duration":5000,"error":"connection timeout","level":"error","message":"Processing failed","service":"memecoin-bot","step":"analyze","timestamp":"2026-03-10T07:41:30.317Z","tokenAddress":"0xtest"}
+{"context":"test","level":"error","message":"Test error message","service":"memecoin-bot","timestamp":"2026-03-10T07:41:31.152Z"}
+{"duration":5000,"error":"connection timeout","level":"error","message":"Processing failed","service":"memecoin-bot","step":"analyze","timestamp":"2026-03-10T07:42:36.578Z","tokenAddress":"0xtest"}
+{"context":"test","level":"error","message":"Test error message","service":"memecoin-bot","timestamp":"2026-03-10T07:42:37.059Z"}

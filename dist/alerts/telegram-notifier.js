@@ -212,7 +212,7 @@ class TelegramNotifier {
      * escapeMarkdown("Hello_world[test]") // "Hello\\_world\\[test\\]"
      */
     escapeMarkdown(text) {
-        return text.replace(/[_*\[\]()~`>#+=|.\-!]/g, '\\$&');
+        return text.replace(/[_*[\]()~`>#+=|.\-!]/g, '\\$&');
     }
     /**
      * Verifies Telegram bot connection.

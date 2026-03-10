@@ -241,7 +241,7 @@ export class TelegramNotifier {
    * escapeMarkdown("Hello_world[test]") // "Hello\\_world\\[test\\]"
    */
   private escapeMarkdown(text: string): string {
-    return text.replace(/[_*\[\]()~`>#+=|.\-!]/g, '\\$&');
+    return text.replace(/[_*[\]()~`>#+=|.\-!]/g, '\\$&');
   }
 
   /**

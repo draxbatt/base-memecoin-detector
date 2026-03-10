@@ -783,7 +783,7 @@ export class TelegramNotifier {
 &nbsp;
     const scoreColor = <span class="cstat-no" title="statement not covered" >score.totalScore &gt;= 70 ? '🟢' : score.totalScore &gt;= 50 ? '🟡' : '🔴';</span>
 &nbsp;
-    let message = <span class="cstat-no" title="statement not covered" >`🚨 *NEW TOKEN ALERT*\n\n`;</span>
+    let message = <span class="cstat-no" title="statement not covered" >'🚨 *NEW TOKEN ALERT*\n\n';</span>
 <span class="cstat-no" title="statement not covered" >    message += `*${tokenName}* (\`${symbol}\`)\n`;</span>
 <span class="cstat-no" title="statement not covered" >    message += `Contract: \`${contractAddress}\`\n`;</span>
 <span class="cstat-no" title="statement not covered" >    message += `Launched: ${timeAgo} ago\n\n`;</span>
@@ -792,7 +792,7 @@ export class TelegramNotifier {
 <span class="cstat-no" title="statement not covered" >    message += `Recommendation: *${score.recommendation}*\n\n`;</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    <span class="missing-if-branch" title="if path not taken" >I</span>if (score.positives.length &gt; 0) {</span>
-<span class="cstat-no" title="statement not covered" >      message += `✅ *Positives:*\n`;</span>
+<span class="cstat-no" title="statement not covered" >      message += '✅ *Positives:*\n';</span>
 <span class="cstat-no" title="statement not covered" >      for (const positive of score.positives.slice(0, 3)) {</span>
 <span class="cstat-no" title="statement not covered" >        message += `• ${this.escapeMarkdown(positive)}\n`;</span>
       }
@@ -800,14 +800,14 @@ export class TelegramNotifier {
     }
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    <span class="missing-if-branch" title="if path not taken" >I</span>if (score.risks.length &gt; 0) {</span>
-<span class="cstat-no" title="statement not covered" >      message += `⚠️ *Risks:*\n`;</span>
+<span class="cstat-no" title="statement not covered" >      message += '⚠️ *Risks:*\n';</span>
 <span class="cstat-no" title="statement not covered" >      for (const risk of score.risks.slice(0, 3)) {</span>
 <span class="cstat-no" title="statement not covered" >        message += `• ${this.escapeMarkdown(risk)}\n`;</span>
       }
 <span class="cstat-no" title="statement not covered" >      message += '\n';</span>
     }
 &nbsp;
-<span class="cstat-no" title="statement not covered" >    message += `📊 *Component Scores:*\n`;</span>
+<span class="cstat-no" title="statement not covered" >    message += '📊 *Component Scores:*\n';</span>
 <span class="cstat-no" title="statement not covered" >    message += `• Holders: ${score.components.holderScore}/100\n`;</span>
 <span class="cstat-no" title="statement not covered" >    message += `• Creator: ${score.components.creatorScore}/100\n`;</span>
 <span class="cstat-no" title="statement not covered" >    message += `• Liquidity: ${score.components.liquidityScore}/100\n`;</span>
@@ -837,9 +837,9 @@ export class TelegramNotifier {
     const hours = <span class="cstat-no" title="statement not covered" >Math.floor(minutes / 60);</span>
     const days = <span class="cstat-no" title="statement not covered" >Math.floor(hours / 24);</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >    <span class="missing-if-branch" title="if path not taken" >I</span>if (days &gt; 0) <span class="cstat-no" title="statement not covered" >return `${days}d`;</span></span>
-<span class="cstat-no" title="statement not covered" >    <span class="missing-if-branch" title="if path not taken" >I</span>if (hours &gt; 0) <span class="cstat-no" title="statement not covered" >return `${hours}h`;</span></span>
-<span class="cstat-no" title="statement not covered" >    <span class="missing-if-branch" title="if path not taken" >I</span>if (minutes &gt; 0) <span class="cstat-no" title="statement not covered" >return `${minutes}m`;</span></span>
+<span class="cstat-no" title="statement not covered" >    <span class="missing-if-branch" title="if path not taken" >I</span>if (days &gt; 0) {<span class="cstat-no" title="statement not covered" >return `${days}d`;}</span></span>
+<span class="cstat-no" title="statement not covered" >    <span class="missing-if-branch" title="if path not taken" >I</span>if (hours &gt; 0) {<span class="cstat-no" title="statement not covered" >return `${hours}h`;}</span></span>
+<span class="cstat-no" title="statement not covered" >    <span class="missing-if-branch" title="if path not taken" >I</span>if (minutes &gt; 0) {<span class="cstat-no" title="statement not covered" >return `${minutes}m`;}</span></span>
 <span class="cstat-no" title="statement not covered" >    return '&lt;1m';</span>
   }
 &nbsp;
@@ -858,7 +858,7 @@ export class TelegramNotifier {
    * escapeMarkdown("Hello_world[test]") // "Hello\\_world\\[test\\]"
    */
   private <span class="fstat-no" title="function not covered" >escapeMarkdown(</span>text: string): string {
-<span class="cstat-no" title="statement not covered" >    return text.replace(/[_*\[\]()~`&gt;#+=|\-\.!]/g, '\\$&amp;');</span>
+<span class="cstat-no" title="statement not covered" >    return text.replace(/[_*\[\]()~`&gt;#+=|.\-!]/g, '\\$&amp;');</span>
   }
 &nbsp;
   /**
@@ -898,7 +898,7 @@ export class TelegramNotifier {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-03-10T05:57:57.068Z
+                at 2026-03-10T07:41:48.998Z
             </div>
         <script src="../prettify.js"></script>
         <script>
