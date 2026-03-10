@@ -6,7 +6,7 @@
 
 import fs from 'fs';
 import path from 'path';
-import { spawn } from 'child_process';
+import logger from './logger';
 
 interface TestResult {
   phase: string;
@@ -78,7 +78,7 @@ class ManualTestHelper {
         'Phase 2: Token Detection',
         true,
         `${count} tokens detected and processed`,
-        Date.now() - start
+        Date.now() - start,
       );
     } catch (error: any) {
       this.addResult('Phase 2: Token Detection', false, error.message, Date.now() - start);
@@ -103,7 +103,7 @@ class ManualTestHelper {
         'Phase 3: Telegram Alerts',
         true,
         `${alerts.length} alerts sent successfully`,
-        Date.now() - start
+        Date.now() - start,
       );
     } catch (error: any) {
       this.addResult('Phase 3: Telegram Alerts', false, error.message, Date.now() - start);
@@ -144,7 +144,7 @@ class ManualTestHelper {
         'Phase 4: Scoring Accuracy',
         true,
         `Avg score: ${avgScore.toFixed(1)}/100 | Safe: ${distribution.safe}, Caution: ${distribution.caution}, Avoid: ${distribution.avoid}`,
-        Date.now() - start
+        Date.now() - start,
       );
     } catch (error: any) {
       this.addResult('Phase 4: Scoring Accuracy', false, error.message, Date.now() - start);
@@ -174,7 +174,7 @@ class ManualTestHelper {
         'Phase 5: False Positive Rate',
         pass,
         `Alert rate: ${(100 - falsePositiveRate).toFixed(1)}% | Processed: ${processed}, Alerted: ${alerted}`,
-        Date.now() - start
+        Date.now() - start,
       );
     } catch (error: any) {
       this.addResult('Phase 5: False Positive Rate', false, error.message, Date.now() - start);
@@ -200,7 +200,7 @@ class ManualTestHelper {
         'Phase 6: Error Recovery',
         pass,
         `Errors: ${errors.length}, Recovery attempts: ${recovered.length}`,
-        Date.now() - start
+        Date.now() - start,
       );
     } catch (error: any) {
       this.addResult('Phase 6: Error Recovery', false, error.message, Date.now() - start);
@@ -223,7 +223,7 @@ class ManualTestHelper {
         'Phase 7: Database Persistence',
         true,
         'Database file exists and accessible',
-        Date.now() - start
+        Date.now() - start,
       );
     } catch (error: any) {
       this.addResult('Phase 7: Database Persistence', false, error.message, Date.now() - start);
@@ -260,7 +260,7 @@ class ManualTestHelper {
         'Phase 8: Performance',
         pass,
         `Avg: ${avgLatency.toFixed(2)}s, Max: ${maxLatency.toFixed(2)}s (target: <3s)`,
-        Date.now() - start
+        Date.now() - start,
       );
     } catch (error: any) {
       this.addResult('Phase 8: Performance', false, error.message, Date.now() - start);
@@ -330,7 +330,7 @@ class ManualTestHelper {
    * Run all verification checks
    */
   async runAll(): Promise<string> {
-    console.log('Starting manual test verification...\n');
+    logger.info('Starting manual test verification...');
 
     try {
       await this.verifyInitialization();
@@ -342,16 +342,16 @@ class ManualTestHelper {
       await this.verifyDatabasePersistence();
       await this.verifyPerformance();
     } catch (error) {
-      console.error('Test interrupted:', error);
+      logger.error('Test interrupted:', { error: (error as Error).message });
     }
 
     const report = this.generateReport();
-    console.log(report);
+    logger.info(report);
 
     // Save report
     const reportFile = path.join(process.cwd(), 'test-report.txt');
     fs.writeFileSync(reportFile, report);
-    console.log(`Report saved to: ${reportFile}\n`);
+    logger.info(`Report saved to: ${reportFile}`);
 
     return report;
   }
@@ -363,5 +363,7 @@ export { ManualTestHelper };
 // Run if executed directly
 if (require.main === module) {
   const helper = new ManualTestHelper();
-  helper.runAll().catch(console.error);
+  helper.runAll().catch((error: unknown) => {
+    logger.error('Manual test failed', { error: (error as Error).message });
+  });
 }

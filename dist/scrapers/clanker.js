@@ -66,10 +66,12 @@ class ClankerScraper {
      * @returns Array of ClankerToken objects
      */
     async fetchLatestLaunches(limit = 50) {
-        if (limit > 100)
+        if (limit > 100) {
             limit = 100;
-        if (limit < 1)
+        }
+        if (limit < 1) {
             limit = 1;
+        }
         try {
             logger_1.default.info(`Fetching latest ${limit} launches from Clanker`);
             const response = await this.makeRequest('/tokens/recent', { limit });
@@ -152,7 +154,7 @@ class ClankerScraper {
         let lastError = null;
         for (let attempt = 0; attempt < this.retryConfig.maxAttempts; attempt++) {
             try {
-                logger_1.default.debug(`Clanker API request`, {
+                logger_1.default.debug('Clanker API request', {
                     endpoint,
                     attempt: attempt + 1,
                     maxAttempts: this.retryConfig.maxAttempts,
@@ -202,8 +204,9 @@ class ClankerScraper {
      * Check if error is retryable (network, timeout, rate limit)
      */
     isRetryableError(error) {
-        if (!(error instanceof Error))
+        if (!(error instanceof Error)) {
             return true;
+        }
         // Network errors
         if (error.message.includes('ECONNREFUSED') || error.message.includes('ENOTFOUND')) {
             return true;
@@ -230,8 +233,9 @@ class ClankerScraper {
      * Checks for required fields, allowing for alternative field names
      */
     isValidToken(token) {
-        if (!token || typeof token !== 'object')
+        if (!token || typeof token !== 'object') {
             return false;
+        }
         // Accept either 'address' or 'tokenAddress' field
         const hasAddress = !!(token.address || token.tokenAddress);
         const hasName = !!token.name;
@@ -242,8 +246,9 @@ class ClankerScraper {
      * Validate Ethereum address format
      */
     isValidAddress(address) {
-        if (!address)
+        if (!address) {
             return false;
+        }
         // Accept both 0x and non-0x prefixed addresses
         const cleanAddress = address.toLowerCase();
         return /^(0x)?[0-9a-f]{40}$/.test(cleanAddress);

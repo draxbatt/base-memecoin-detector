@@ -95,7 +95,7 @@ export class ScoringEngine {
     holderAnalysis: HolderAnalysis,
     creatorAnalysis: CreatorAnalysis,
     liquidityAnalysis: LiquidityAnalysis,
-    pumpScore: number = 50
+    pumpScore: number = 50,
   ): ScoringResult {
     logger.debug('Calculating token score', {
       holderScore: holderAnalysis.score,
@@ -109,7 +109,7 @@ export class ScoringEngine {
       (holderAnalysis.score * SCORING_WEIGHTS.holders) +
       (creatorAnalysis.score * SCORING_WEIGHTS.creator) +
       (liquidityAnalysis.score * SCORING_WEIGHTS.liquidity) +
-      (pumpScore * SCORING_WEIGHTS.pump)
+      (pumpScore * SCORING_WEIGHTS.pump),
     );
 
     // Combine all risk/positive flags for alert message

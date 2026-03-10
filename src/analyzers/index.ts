@@ -304,7 +304,7 @@ export class LiquidityAnalyzer {
   analyzeLiquidity(
     contractAddress: string,
     liquidityAmount: number | undefined,
-    isLocked: boolean
+    isLocked: boolean,
   ): LiquidityAnalysis {
     logger.debug('Analyzing liquidity', {
       contractAddress,

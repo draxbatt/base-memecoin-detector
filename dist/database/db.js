@@ -76,8 +76,9 @@ class Database {
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
           )
         `, (err) => {
-                    if (err)
+                    if (err) {
                         reject(new errors_1.DatabaseError('Failed to create tokens table', { error: err.message }));
+                    }
                 });
                 // Analyses table
                 this.db.run(`
@@ -96,8 +97,9 @@ class Database {
             FOREIGN KEY (tokenId) REFERENCES tokens(id)
           )
         `, (err) => {
-                    if (err)
+                    if (err) {
                         reject(new errors_1.DatabaseError('Failed to create analyses table', { error: err.message }));
+                    }
                 });
                 // Alerts sent table
                 this.db.run(`
@@ -111,10 +113,12 @@ class Database {
             FOREIGN KEY (tokenId) REFERENCES tokens(id)
           )
         `, (err) => {
-                    if (err)
+                    if (err) {
                         reject(new errors_1.DatabaseError('Failed to create alerts_sent table', { error: err.message }));
-                    else
+                    }
+                    else {
                         resolve();
+                    }
                 });
             });
         });
@@ -149,10 +153,12 @@ class Database {
         ON CONFLICT(contractAddress) DO UPDATE SET lastUpdated = excluded.lastUpdated
       `;
             this.db.run(sql, [token.contractAddress, token.name, token.symbol, token.launchTime, token.firstSeen, token.lastUpdated, token.source], function (err) {
-                if (err)
+                if (err) {
                     reject(new errors_1.DatabaseError('Failed to insert token', { token, error: err.message }));
-                else
+                }
+                else {
                     resolve(this.lastID);
+                }
             });
         });
     }
@@ -170,10 +176,12 @@ class Database {
     async getToken(contractAddress) {
         return new Promise((resolve, reject) => {
             this.db.get('SELECT * FROM tokens WHERE contractAddress = ?', [contractAddress], (err, row) => {
-                if (err)
+                if (err) {
                     reject(new errors_1.DatabaseError('Failed to get token', { contractAddress, error: err.message }));
-                else
+                }
+                else {
                     resolve(row || null);
+                }
             });
         });
     }
@@ -217,10 +225,12 @@ class Database {
                 JSON.stringify(analysis.positives),
                 analysis.timestamp,
             ], function (err) {
-                if (err)
+                if (err) {
                     reject(new errors_1.DatabaseError('Failed to insert analysis', { tokenId: analysis.tokenId, error: err.message }));
-                else
+                }
+                else {
                     resolve(this.lastID);
+                }
             });
         });
     }
@@ -242,10 +252,12 @@ class Database {
     async hasAlertBeenSent(tokenId) {
         return new Promise((resolve, reject) => {
             this.db.get('SELECT id FROM alerts_sent WHERE tokenId = ?', [tokenId], (err, row) => {
-                if (err)
+                if (err) {
                     reject(new errors_1.DatabaseError('Failed to check alert', { tokenId, error: err.message }));
-                else
+                }
+                else {
                     resolve(!!row);
+                }
             });
         });
     }
@@ -270,10 +282,12 @@ class Database {
         VALUES (?, ?, ?)
       `;
             this.db.run(sql, [tokenId, Date.now(), messageId], function (err) {
-                if (err)
+                if (err) {
                     reject(new errors_1.DatabaseError('Failed to record alert', { tokenId, error: err.message }));
-                else
+                }
+                else {
                     resolve(this.lastID);
+                }
             });
         });
     }
@@ -294,10 +308,12 @@ class Database {
         return new Promise((resolve, reject) => {
             const sql = 'SELECT * FROM analyses WHERE tokenId = ? ORDER BY timestamp DESC LIMIT 1';
             this.db.get(sql, [tokenId], (err, row) => {
-                if (err)
+                if (err) {
                     reject(new errors_1.DatabaseError('Failed to get analysis', { tokenId, error: err.message }));
-                else
+                }
+                else {
                     resolve(row ? { ...row, risks: JSON.parse(row.risks), positives: JSON.parse(row.positives) } : null);
+                }
             });
         });
     }
@@ -313,7 +329,7 @@ class Database {
      */
     async verifyTables() {
         return new Promise((resolve) => {
-            const sql = `SELECT name FROM sqlite_master WHERE type='table' AND name IN ('tokens', 'analyses', 'alerts_sent')`;
+            const sql = 'SELECT name FROM sqlite_master WHERE type=\'table\' AND name IN (\'tokens\', \'analyses\', \'alerts_sent\')';
             this.db.all(sql, (err, rows) => {
                 if (err) {
                     logger_1.default.error('Failed to verify tables', { error: err.message });
@@ -340,10 +356,12 @@ class Database {
     async getTokenCount() {
         return new Promise((resolve, reject) => {
             this.db.get('SELECT COUNT(*) as count FROM tokens', (err, row) => {
-                if (err)
+                if (err) {
                     reject(new errors_1.DatabaseError('Failed to get token count', { error: err.message }));
-                else
+                }
+                else {
                     resolve(row?.count || 0);
+                }
             });
         });
     }
@@ -362,8 +380,9 @@ class Database {
     close() {
         return new Promise((resolve, reject) => {
             this.db.close((err) => {
-                if (err)
+                if (err) {
                     reject(err);
+                }
                 else {
                     logger_1.default.info('Database closed');
                     resolve();

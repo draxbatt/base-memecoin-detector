@@ -1,5 +1,4 @@
 import sqlite3 from 'sqlite3';
-import path from 'path';
 import { DatabaseError } from '../utils/errors';
 import logger from '../utils/logger';
 
@@ -149,7 +148,7 @@ export class Database {
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
           )
         `, (err) => {
-          if (err) reject(new DatabaseError('Failed to create tokens table', { error: err.message }));
+          if (err) {reject(new DatabaseError('Failed to create tokens table', { error: err.message }));}
         });
 
         // Analyses table
@@ -169,7 +168,7 @@ export class Database {
             FOREIGN KEY (tokenId) REFERENCES tokens(id)
           )
         `, (err) => {
-          if (err) reject(new DatabaseError('Failed to create analyses table', { error: err.message }));
+          if (err) {reject(new DatabaseError('Failed to create analyses table', { error: err.message }));}
         });
 
         // Alerts sent table
@@ -184,8 +183,8 @@ export class Database {
             FOREIGN KEY (tokenId) REFERENCES tokens(id)
           )
         `, (err) => {
-          if (err) reject(new DatabaseError('Failed to create alerts_sent table', { error: err.message }));
-          else resolve();
+          if (err) {reject(new DatabaseError('Failed to create alerts_sent table', { error: err.message }));}
+          else {resolve();}
         });
       });
     });
@@ -224,9 +223,9 @@ export class Database {
         sql,
         [token.contractAddress, token.name, token.symbol, token.launchTime, token.firstSeen, token.lastUpdated, token.source],
         function (err) {
-          if (err) reject(new DatabaseError('Failed to insert token', { token, error: err.message }));
-          else resolve(this.lastID);
-        }
+          if (err) {reject(new DatabaseError('Failed to insert token', { token, error: err.message }));}
+          else {resolve(this.lastID);}
+        },
       );
     });
   }
@@ -245,8 +244,8 @@ export class Database {
   async getToken(contractAddress: string): Promise<TokenRecord | null> {
     return new Promise((resolve, reject) => {
       this.db.get('SELECT * FROM tokens WHERE contractAddress = ?', [contractAddress], (err, row: any) => {
-        if (err) reject(new DatabaseError('Failed to get token', { contractAddress, error: err.message }));
-        else resolve(row as TokenRecord || null);
+        if (err) {reject(new DatabaseError('Failed to get token', { contractAddress, error: err.message }));}
+        else {resolve(row as TokenRecord || null);}
       });
     });
   }
@@ -294,9 +293,9 @@ export class Database {
           analysis.timestamp,
         ],
         function (err) {
-          if (err) reject(new DatabaseError('Failed to insert analysis', { tokenId: analysis.tokenId, error: err.message }));
-          else resolve(this.lastID);
-        }
+          if (err) {reject(new DatabaseError('Failed to insert analysis', { tokenId: analysis.tokenId, error: err.message }));}
+          else {resolve(this.lastID);}
+        },
       );
     });
   }
@@ -319,8 +318,8 @@ export class Database {
   async hasAlertBeenSent(tokenId: number): Promise<boolean> {
     return new Promise((resolve, reject) => {
       this.db.get('SELECT id FROM alerts_sent WHERE tokenId = ?', [tokenId], (err, row) => {
-        if (err) reject(new DatabaseError('Failed to check alert', { tokenId, error: err.message }));
-        else resolve(!!row);
+        if (err) {reject(new DatabaseError('Failed to check alert', { tokenId, error: err.message }));}
+        else {resolve(!!row);}
       });
     });
   }
@@ -349,9 +348,9 @@ export class Database {
         sql,
         [tokenId, Date.now(), messageId],
         function (err) {
-          if (err) reject(new DatabaseError('Failed to record alert', { tokenId, error: err.message }));
-          else resolve(this.lastID);
-        }
+          if (err) {reject(new DatabaseError('Failed to record alert', { tokenId, error: err.message }));}
+          else {resolve(this.lastID);}
+        },
       );
     });
   }
@@ -373,8 +372,8 @@ export class Database {
     return new Promise((resolve, reject) => {
       const sql = 'SELECT * FROM analyses WHERE tokenId = ? ORDER BY timestamp DESC LIMIT 1';
       this.db.get(sql, [tokenId], (err, row: any) => {
-        if (err) reject(new DatabaseError('Failed to get analysis', { tokenId, error: err.message }));
-        else resolve(row ? { ...row, risks: JSON.parse(row.risks), positives: JSON.parse(row.positives) } as AnalysisRecord : null);
+        if (err) {reject(new DatabaseError('Failed to get analysis', { tokenId, error: err.message }));}
+        else {resolve(row ? { ...row, risks: JSON.parse(row.risks), positives: JSON.parse(row.positives) } as AnalysisRecord : null);}
       });
     });
   }
@@ -391,7 +390,7 @@ export class Database {
    */
   async verifyTables(): Promise<boolean> {
     return new Promise((resolve) => {
-      const sql = `SELECT name FROM sqlite_master WHERE type='table' AND name IN ('tokens', 'analyses', 'alerts_sent')`;
+      const sql = 'SELECT name FROM sqlite_master WHERE type=\'table\' AND name IN (\'tokens\', \'analyses\', \'alerts_sent\')';
       this.db.all(sql, (err, rows: any[]) => {
         if (err) {
           logger.error('Failed to verify tables', { error: err.message });
@@ -418,8 +417,8 @@ export class Database {
   async getTokenCount(): Promise<number> {
     return new Promise((resolve, reject) => {
       this.db.get('SELECT COUNT(*) as count FROM tokens', (err, row: any) => {
-        if (err) reject(new DatabaseError('Failed to get token count', { error: err.message }));
-        else resolve(row?.count || 0);
+        if (err) {reject(new DatabaseError('Failed to get token count', { error: err.message }));}
+        else {resolve(row?.count || 0);}
       });
     });
   }
@@ -439,7 +438,7 @@ export class Database {
   close(): Promise<void> {
     return new Promise((resolve, reject) => {
       this.db.close((err) => {
-        if (err) reject(err);
+        if (err) {reject(err);}
         else {
           logger.info('Database closed');
           resolve();

@@ -184,7 +184,7 @@ export class RPCProvider {
 
     for (let i = 0; i < providerNames.length; i++) {
       const nextName = providerNames[(currentIndex + 1 + i) % providerNames.length];
-      if (nextName === this.activeProviderName) continue;
+      if (nextName === this.activeProviderName) {continue;}
 
       const isHealthy = await this.testConnection(nextName, 1);
       if (isHealthy) {

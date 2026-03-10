@@ -60,7 +60,7 @@ class RateLimiter {
 /**
  * Clanker Scraper
  * Fetches memecoin launch data from Clanker platform (Base chain)
- * 
+ *
  * API Rate Limit: 100 requests per minute
  * Implements exponential backoff retry logic with jitter
  */
@@ -95,8 +95,8 @@ export class ClankerScraper {
    * @returns Array of ClankerToken objects
    */
   async fetchLatestLaunches(limit: number = 50): Promise<ClankerToken[]> {
-    if (limit > 100) limit = 100;
-    if (limit < 1) limit = 1;
+    if (limit > 100) {limit = 100;}
+    if (limit < 1) {limit = 1;}
 
     try {
       logger.info(`Fetching latest ${limit} launches from Clanker`);
@@ -135,7 +135,7 @@ export class ClankerScraper {
     try {
       logger.debug(`Fetching details for token ${tokenAddress}`);
       const response = await this.makeRequest(`/token/${tokenAddress}`);
-      
+
       if (!this.isValidToken(response)) {
         logger.warn('Clanker returned invalid token data', { address: tokenAddress });
         return null;
@@ -189,14 +189,14 @@ export class ClankerScraper {
 
     for (let attempt = 0; attempt < this.retryConfig.maxAttempts; attempt++) {
       try {
-        logger.debug(`Clanker API request`, {
+        logger.debug('Clanker API request', {
           endpoint,
           attempt: attempt + 1,
           maxAttempts: this.retryConfig.maxAttempts,
         });
 
         const response = await this.httpClient.get(endpoint, { params });
-        
+
         if (response.status === 200 || response.status === 201) {
           return response.data;
         }
@@ -229,7 +229,7 @@ export class ClankerScraper {
 
     // All retries exhausted
     throw new Error(
-      `Failed to fetch ${endpoint} after ${this.retryConfig.maxAttempts} attempts: ${lastError?.message || 'unknown error'}`
+      `Failed to fetch ${endpoint} after ${this.retryConfig.maxAttempts} attempts: ${lastError?.message || 'unknown error'}`,
     );
   }
 
@@ -250,7 +250,7 @@ export class ClankerScraper {
    * Check if error is retryable (network, timeout, rate limit)
    */
   private isRetryableError(error: any): boolean {
-    if (!(error instanceof Error)) return true;
+    if (!(error instanceof Error)) {return true;}
 
     // Network errors
     if (error.message.includes('ECONNREFUSED') || error.message.includes('ENOTFOUND')) {
@@ -282,7 +282,7 @@ export class ClankerScraper {
    * Checks for required fields, allowing for alternative field names
    */
   private isValidToken(token: any): boolean {
-    if (!token || typeof token !== 'object') return false;
+    if (!token || typeof token !== 'object') {return false;}
     // Accept either 'address' or 'tokenAddress' field
     const hasAddress = !!(token.address || token.tokenAddress);
     const hasName = !!token.name;
@@ -294,7 +294,7 @@ export class ClankerScraper {
    * Validate Ethereum address format
    */
   private isValidAddress(address: string): boolean {
-    if (!address) return false;
+    if (!address) {return false;}
     // Accept both 0x and non-0x prefixed addresses
     const cleanAddress = address.toLowerCase();
     return /^(0x)?[0-9a-f]{40}$/.test(cleanAddress);
@@ -332,13 +332,13 @@ export class ClankerScraper {
       logger.debug('Performing Clanker API health check');
       const response = await this.httpClient.get('/health', { timeout: 3000 });
       const isHealthy = response.status === 200;
-      
+
       if (isHealthy) {
         logger.info('Clanker API health check passed');
       } else {
         logger.warn('Clanker API health check failed', { status: response.status });
       }
-      
+
       return isHealthy;
     } catch (error) {
       logger.error('Clanker API health check failed', {

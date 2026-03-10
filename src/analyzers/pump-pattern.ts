@@ -28,7 +28,7 @@ export interface PumpPatternAnalysis {
 /**
  * PumpPatternAnalyzer
  * Detects potential pump-and-dump schemes and analyzes price momentum
- * 
+ *
  * Analysis includes:
  * - Price volatility and momentum
  * - Volume patterns and anomalies
@@ -38,7 +38,7 @@ export interface PumpPatternAnalysis {
 export class PumpPatternAnalyzer {
   /**
    * Analyze pump pattern from price/volume history
-   * 
+   *
    * @param priceHistory - Array of historical price data points, ordered by timestamp ascending
    * @param launchPrice - The initial launch price in USDT
    * @returns PumpPatternAnalysis with score and risk flags
@@ -62,25 +62,25 @@ export class PumpPatternAnalyzer {
       // Extract metrics
       const currentPrice = sortedHistory[sortedHistory.length - 1].price;
       const priceMultiplier = currentPrice / launchPrice;
-      
+
       // Calculate volume metrics
       const volumes = sortedHistory.map(p => p.volume);
       const avgVolume = volumes.reduce((a, b) => a + b, 0) / volumes.length;
       const maxVolume = Math.max(...volumes);
       const volumeMultiplier = currentPrice > 0 ? maxVolume / (avgVolume || 1) : 1;
-      
+
       // Determine volume trend
       const volumeTrend = this.analyzeVolumeTrend(sortedHistory);
-      
+
       // Calculate price momentum
       const priceMomentum = this.calculatePriceMomentum(sortedHistory);
-      
+
       // Calculate volatility
       const volatility = this.calculateVolatility(sortedHistory);
-      
+
       // Detect pump-and-dump patterns
       const hasExecutionRisk = this.detectExecutionRisk(sortedHistory, launchPrice);
-      
+
       // Generate risk flags and positives
       const { riskFlags, positives } = this.generateFlags(
         priceMultiplier,
@@ -89,9 +89,9 @@ export class PumpPatternAnalyzer {
         volatility,
         volumeTrend,
         hasExecutionRisk,
-        sortedHistory
+        sortedHistory,
       );
-      
+
       // Calculate final score
       const score = this.calculateScore(
         priceMultiplier,
@@ -99,7 +99,7 @@ export class PumpPatternAnalyzer {
         priceMomentum,
         volumeMultiplier,
         volumeTrend,
-        hasExecutionRisk
+        hasExecutionRisk,
       );
 
       logger.debug('Pump pattern analysis complete', {
@@ -131,7 +131,7 @@ export class PumpPatternAnalyzer {
 
   /**
    * Analyze the direction of volume trend
-   * 
+   *
    * @param sortedHistory - Price history sorted by timestamp
    * @returns 'increasing', 'decreasing', or 'stable'
    */
@@ -155,14 +155,14 @@ export class PumpPatternAnalyzer {
     } else if (volumeChange < -0.15) {
       return 'decreasing';
     }
-    
+
     return 'stable';
   }
 
   /**
    * Calculate price momentum (rate of price change)
    * Returns ratio: (price_now - price_old) / price_old
-   * 
+   *
    * @param sortedHistory - Price history sorted by timestamp
    * @returns Momentum as decimal (e.g., 0.5 = 50% increase)
    */
@@ -179,7 +179,7 @@ export class PumpPatternAnalyzer {
 
   /**
    * Calculate volatility using standard deviation of returns
-   * 
+   *
    * @param sortedHistory - Price history sorted by timestamp
    * @returns Standard deviation of log returns
    */
@@ -193,7 +193,7 @@ export class PumpPatternAnalyzer {
     for (let i = 1; i < sortedHistory.length; i++) {
       const prevPrice = sortedHistory[i - 1].price;
       const currentPrice = sortedHistory[i].price;
-      
+
       if (prevPrice > 0) {
         const logReturn = Math.log(currentPrice / prevPrice);
         returns.push(logReturn);
@@ -216,12 +216,12 @@ export class PumpPatternAnalyzer {
 
   /**
    * Detect execution risk indicators for pump-and-dump
-   * 
+   *
    * Looks for:
    * - Extreme price spike followed by selloff
    * - Volume spike at peak
    * - Rapid pullback after peak
-   * 
+   *
    * @param sortedHistory - Price history sorted by timestamp
    * @param launchPrice - Initial launch price
    * @returns True if pump-and-dump indicators detected
@@ -264,7 +264,7 @@ export class PumpPatternAnalyzer {
 
   /**
    * Generate risk flags and positive indicators
-   * 
+   *
    * @param priceMultiplier - Current price / launch price
    * @param volumeMultiplier - Max volume / avg volume
    * @param priceMomentum - Rate of price change
@@ -281,7 +281,7 @@ export class PumpPatternAnalyzer {
     volatility: number,
     volumeTrend: string,
     hasExecutionRisk: boolean,
-    sortedHistory: PriceDataPoint[]
+    sortedHistory: PriceDataPoint[],
   ): { riskFlags: string[]; positives: string[] } {
     const riskFlags: string[] = [];
     const positives: string[] = [];
@@ -348,14 +348,14 @@ export class PumpPatternAnalyzer {
 
   /**
    * Calculate the final pump pattern score (0-100)
-   * 
+   *
    * Scoring logic:
    * - High volatility → lower score
    * - Extreme price movements → lower score (bubble risk)
    * - Execution risk → significantly lower score
    * - Stable growth → higher score
    * - Strong volume → higher score
-   * 
+   *
    * @param priceMultiplier - Current price / launch price
    * @param volatility - Standard deviation of returns
    * @param priceMomentum - Rate of price change
@@ -370,7 +370,7 @@ export class PumpPatternAnalyzer {
     priceMomentum: number,
     volumeMultiplier: number,
     volumeTrend: string,
-    hasExecutionRisk: boolean
+    hasExecutionRisk: boolean,
   ): number {
     let score = 60; // Start at neutral baseline
 
@@ -429,7 +429,7 @@ export class PumpPatternAnalyzer {
 
   /**
    * Create a neutral analysis result for edge cases
-   * 
+   *
    * @param reason - Reason for neutral analysis
    * @returns Neutral PumpPatternAnalysis
    */

@@ -13,7 +13,7 @@ export declare class WalletAnalyzer {
     /**
      * Get transaction history for wallet
      */
-    getTransactionHistory(address: string, limit?: number): Promise<any[]>;
+    getTransactionHistory(address: string, _limit?: number): Promise<any[]>;
     /**
      * Score wallet based on behavior
      */

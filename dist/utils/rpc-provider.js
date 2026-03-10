@@ -156,8 +156,9 @@ class RPCProvider {
         logger_1.default.warn(`Attempting failover from ${this.activeProviderName}`);
         for (let i = 0; i < providerNames.length; i++) {
             const nextName = providerNames[(currentIndex + 1 + i) % providerNames.length];
-            if (nextName === this.activeProviderName)
+            if (nextName === this.activeProviderName) {
                 continue;
+            }
             const isHealthy = await this.testConnection(nextName, 1);
             if (isHealthy) {
                 this.activeProviderName = nextName;

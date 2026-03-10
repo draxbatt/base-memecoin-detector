@@ -166,7 +166,7 @@ export class TelegramNotifier {
 
     const scoreColor = score.totalScore >= 70 ? '🟢' : score.totalScore >= 50 ? '🟡' : '🔴';
 
-    let message = `🚨 *NEW TOKEN ALERT*\n\n`;
+    let message = '🚨 *NEW TOKEN ALERT*\n\n';
     message += `*${tokenName}* (\`${symbol}\`)\n`;
     message += `Contract: \`${contractAddress}\`\n`;
     message += `Launched: ${timeAgo} ago\n\n`;
@@ -175,7 +175,7 @@ export class TelegramNotifier {
     message += `Recommendation: *${score.recommendation}*\n\n`;
 
     if (score.positives.length > 0) {
-      message += `✅ *Positives:*\n`;
+      message += '✅ *Positives:*\n';
       for (const positive of score.positives.slice(0, 3)) {
         message += `• ${this.escapeMarkdown(positive)}\n`;
       }
@@ -183,14 +183,14 @@ export class TelegramNotifier {
     }
 
     if (score.risks.length > 0) {
-      message += `⚠️ *Risks:*\n`;
+      message += '⚠️ *Risks:*\n';
       for (const risk of score.risks.slice(0, 3)) {
         message += `• ${this.escapeMarkdown(risk)}\n`;
       }
       message += '\n';
     }
 
-    message += `📊 *Component Scores:*\n`;
+    message += '📊 *Component Scores:*\n';
     message += `• Holders: ${score.components.holderScore}/100\n`;
     message += `• Creator: ${score.components.creatorScore}/100\n`;
     message += `• Liquidity: ${score.components.liquidityScore}/100\n`;
@@ -220,9 +220,9 @@ export class TelegramNotifier {
     const hours = Math.floor(minutes / 60);
     const days = Math.floor(hours / 24);
 
-    if (days > 0) return `${days}d`;
-    if (hours > 0) return `${hours}h`;
-    if (minutes > 0) return `${minutes}m`;
+    if (days > 0) {return `${days}d`;}
+    if (hours > 0) {return `${hours}h`;}
+    if (minutes > 0) {return `${minutes}m`;}
     return '<1m';
   }
 
@@ -241,7 +241,7 @@ export class TelegramNotifier {
    * escapeMarkdown("Hello_world[test]") // "Hello\\_world\\[test\\]"
    */
   private escapeMarkdown(text: string): string {
-    return text.replace(/[_*\[\]()~`>#+=|\-\.!]/g, '\\$&');
+    return text.replace(/[_*\[\]()~`>#+=|.\-!]/g, '\\$&');
   }
 
   /**

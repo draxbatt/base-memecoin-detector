@@ -162,7 +162,6 @@ class RpcIntegration {
                     logger_1.default.warn('Failed to parse holder', { holder, error: error.message });
                     return null;
                 }
-                ;
             })
                 .filter((h) => h !== null);
         }
@@ -197,10 +196,12 @@ class RpcIntegration {
             // Extract unique addresses and their balances
             const addressSet = new Set();
             events.forEach((event) => {
-                if (event.args?.to)
+                if (event.args?.to) {
                     addressSet.add(event.args.to);
-                if (event.args?.from)
+                }
+                if (event.args?.from) {
                     addressSet.add(event.args.from);
+                }
             });
             // Query balances for top addresses
             const addresses = Array.from(addressSet).slice(0, limit * 2); // Fetch more than needed
@@ -244,8 +245,9 @@ class RpcIntegration {
      */
     getFromCache(contractAddress) {
         const cached = this.holdersCache.get(contractAddress.toLowerCase());
-        if (!cached)
+        if (!cached) {
             return null;
+        }
         const age = Date.now() - cached.timestamp;
         if (age > cached.ttlMs) {
             this.holdersCache.delete(contractAddress.toLowerCase());

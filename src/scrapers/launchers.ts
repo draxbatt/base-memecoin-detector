@@ -23,11 +23,11 @@ export class ClankerScraper {
   async fetchLatestLaunches(limit: number = 20): Promise<TokenLaunch[]> {
     try {
       logger.debug('Fetching Clanker launches', { limit });
-      
+
       // TODO: Replace with actual Clanker API endpoint
       // This is a placeholder that demonstrates the structure
       const response = await this.client.get('/launches', {
-        params: { limit, chain: 'base', sort: 'newest' }
+        params: { limit, chain: 'base', sort: 'newest' },
       });
 
       if (!response.data || !Array.isArray(response.data)) {
@@ -66,7 +66,7 @@ export class BankrScraper {
 
       // TODO: Replace with actual Bankr API endpoint
       const response = await this.client.get('/new-tokens', {
-        params: { limit, chain: 'base', sortBy: 'newest' }
+        params: { limit, chain: 'base', sortBy: 'newest' },
       });
 
       if (!response.data || !Array.isArray(response.data)) {

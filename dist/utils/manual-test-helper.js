@@ -11,6 +11,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ManualTestHelper = void 0;
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
+const logger_1 = __importDefault(require("./logger"));
 class ManualTestHelper {
     constructor() {
         this.results = [];
@@ -259,7 +260,7 @@ class ManualTestHelper {
      * Run all verification checks
      */
     async runAll() {
-        console.log('Starting manual test verification...\n');
+        logger_1.default.info('Starting manual test verification...');
         try {
             await this.verifyInitialization();
             await this.verifyTokenDetection();
@@ -271,14 +272,14 @@ class ManualTestHelper {
             await this.verifyPerformance();
         }
         catch (error) {
-            console.error('Test interrupted:', error);
+            logger_1.default.error('Test interrupted:', { error: error.message });
         }
         const report = this.generateReport();
-        console.log(report);
+        logger_1.default.info(report);
         // Save report
         const reportFile = path_1.default.join(process.cwd(), 'test-report.txt');
         fs_1.default.writeFileSync(reportFile, report);
-        console.log(`Report saved to: ${reportFile}\n`);
+        logger_1.default.info(`Report saved to: ${reportFile}`);
         return report;
     }
 }
@@ -286,6 +287,8 @@ exports.ManualTestHelper = ManualTestHelper;
 // Run if executed directly
 if (require.main === module) {
     const helper = new ManualTestHelper();
-    helper.runAll().catch(console.error);
+    helper.runAll().catch((error) => {
+        logger_1.default.error('Manual test failed', { error: error.message });
+    });
 }
 //# sourceMappingURL=manual-test-helper.js.map

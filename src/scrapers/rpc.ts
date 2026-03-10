@@ -1,7 +1,7 @@
 import { ethers } from 'ethers';
 import { RetryClient } from '../utils/http-client';
 import logger from '../utils/logger';
-import { APIError, ValidationError } from '../utils/errors';
+import { APIError } from '../utils/errors';
 import axios from 'axios';
 
 export interface TokenOnChainData {
@@ -43,7 +43,7 @@ export class RpcIntegration {
       const contract = new ethers.Contract(
         contractAddress,
         ['function totalSupply() public view returns (uint256)'],
-        this.provider
+        this.provider,
       );
       return await contract.totalSupply();
     } catch (error: any) {
@@ -59,7 +59,7 @@ export class RpcIntegration {
       const contract = new ethers.Contract(
         contractAddress,
         ['function decimals() public view returns (uint8)'],
-        this.provider
+        this.provider,
       );
       return await contract.decimals();
     } catch (error: any) {
@@ -73,7 +73,7 @@ export class RpcIntegration {
   /**
    * Fetch top holders from Basescan API with caching
    * Falls back gracefully if API key is missing or rate limited
-   * 
+   *
    * @param contractAddress Token contract address
    * @param limit Number of top holders to fetch (max 10000)
    * @returns Array of top holders with balances and percentages
@@ -106,15 +106,15 @@ export class RpcIntegration {
       if (this.basescanApiKey) {
         try {
           const holders = await this.fetchFromBasescan(contractAddress);
-          
+
           // Cache the result
           this.setCache(contractAddress, holders);
-          
+
           logger.info('Fetched top holders from Basescan', {
             contractAddress,
             count: holders.length,
           });
-          
+
           return holders.slice(0, limit);
         } catch (error: any) {
           logger.warn('Basescan API failed, falling back to RPC', {
@@ -128,10 +128,10 @@ export class RpcIntegration {
       // RPC fallback: try to estimate from transfer events
       logger.debug('Using RPC fallback for holder data', { contractAddress });
       const holders = await this.estimateHoldersFromRpc(contractAddress, limit);
-      
+
       // Cache the fallback result
       this.setCache(contractAddress, holders);
-      
+
       return holders;
     } catch (error: any) {
       logger.error('Failed to fetch top holders', {
@@ -171,7 +171,7 @@ export class RpcIntegration {
       }
 
       const holders = response.data.result || [];
-      
+
       if (!Array.isArray(holders) || holders.length === 0) {
         return [];
       }
@@ -190,7 +190,7 @@ export class RpcIntegration {
         .map((holder: any) => {
           try {
             const balance = BigInt(holder.TokenHolderQuantity || 0);
-            const percentage = totalSupply > 0n 
+            const percentage = totalSupply > 0n
               ? Number((balance * BigInt(10000) / totalSupply)) / 100
               : 0;
 
@@ -202,7 +202,7 @@ export class RpcIntegration {
           } catch (error) {
             logger.warn('Failed to parse holder', { holder, error: (error as Error).message });
             return null;
-          };
+          }
         })
         .filter((h): h is TokenOnChainData['topHolders'][0] => h !== null);
     } catch (error: any) {
@@ -210,7 +210,7 @@ export class RpcIntegration {
         logger.warn('Basescan rate limited', { contractAddress });
         throw new APIError('Basescan rate limited', { status: 429, contractAddress });
       }
-      
+
       throw new APIError('Basescan API request failed', {
         contractAddress,
         error: error.message,
@@ -232,7 +232,7 @@ export class RpcIntegration {
           'function totalSupply() public view returns (uint256)',
           'event Transfer(address indexed from, address indexed to, uint256 value)',
         ],
-        this.provider
+        this.provider,
       );
 
       // Get recent Transfer events (last 1000 blocks)
@@ -245,8 +245,8 @@ export class RpcIntegration {
       // Extract unique addresses and their balances
       const addressSet = new Set<string>();
       events.forEach((event: any) => {
-        if (event.args?.to) addressSet.add(event.args.to);
-        if (event.args?.from) addressSet.add(event.args.from);
+        if (event.args?.to) {addressSet.add(event.args.to);}
+        if (event.args?.from) {addressSet.add(event.args.from);}
       });
 
       // Query balances for top addresses
@@ -260,7 +260,7 @@ export class RpcIntegration {
         try {
           const balance = await contract.balanceOf(address);
           const balanceBigInt = BigInt(balance.toString());
-          
+
           if (balanceBigInt > BigInt(0)) {
             const percentage = totalSupplyBigInt > BigInt(0)
               ? Number((balanceBigInt * BigInt(10000) / totalSupplyBigInt)) / 100
@@ -295,8 +295,8 @@ export class RpcIntegration {
    */
   private getFromCache(contractAddress: string): TokenOnChainData['topHolders'] | null {
     const cached = this.holdersCache.get(contractAddress.toLowerCase());
-    
-    if (!cached) return null;
+
+    if (!cached) {return null;}
 
     const age = Date.now() - cached.timestamp;
     if (age > cached.ttlMs) {
@@ -354,7 +354,7 @@ export class RpcIntegration {
       try {
         const supply = await this.getTokenSupply(contractAddress);
         const decimals = await this.getTokenDecimals(contractAddress);
-        
+
         return {
           contractAddress,
           totalSupply: supply,

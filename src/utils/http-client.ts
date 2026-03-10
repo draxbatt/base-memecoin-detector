@@ -1,5 +1,4 @@
 import axios, { AxiosInstance } from 'axios';
-import { RateLimitError } from './errors';
 import logger from './logger';
 
 export class RetryClient {

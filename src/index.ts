@@ -7,7 +7,6 @@ import { ScoringEngine } from './scoring/score-engine';
 import { TelegramNotifier } from './alerts/telegram-notifier';
 import { config } from './config/env';
 import logger from './utils/logger';
-import { BotError } from './utils/errors';
 
 /**
  * MemecoinBot - Main orchestrator for memecoin detection and analysis.
@@ -260,14 +259,14 @@ export class MemecoinBot {
       const liquidityAnalysis = this.liquidityAnalyzer.analyzeLiquidity(
         contractAddress,
         launch.initialLiquidity,
-        isLocked
+        isLocked,
       );
 
       // Score
       const scoring = this.scoringEngine.score(
         holderAnalysis,
         creatorAnalysis,
-        liquidityAnalysis
+        liquidityAnalysis,
       );
 
       // Store analysis
