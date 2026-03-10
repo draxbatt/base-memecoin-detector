@@ -3,6 +3,21 @@ import path from 'path';
 import { DatabaseError } from '../utils/errors';
 import logger from '../utils/logger';
 
+/**
+ * Token record stored in database.
+ *
+ * Represents a unique memecoin launch detected by scrapers.
+ *
+ * @interface TokenRecord
+ * @property {number} [id] - Primary key (auto-generated)
+ * @property {string} contractAddress - ERC-20 token contract address (UNIQUE)
+ * @property {string} name - Token full name (e.g., "Doge Inu")
+ * @property {string} symbol - Token ticker symbol (e.g., "DOGE")
+ * @property {number} launchTime - Timestamp when token was launched
+ * @property {number} firstSeen - Timestamp when bot first detected token
+ * @property {number} lastUpdated - Timestamp of last scan/update
+ * @property {('clanker' | 'bankr')} source - Data source (Clanker or Bankr)
+ */
 export interface TokenRecord {
   id?: number;
   contractAddress: string;
@@ -14,6 +29,23 @@ export interface TokenRecord {
   source: 'clanker' | 'bankr';
 }
 
+/**
+ * Analysis result stored in database.
+ *
+ * Stores the scoring breakdown and component scores for a token at a point in time.
+ *
+ * @interface AnalysisRecord
+ * @property {number} [id] - Primary key (auto-generated)
+ * @property {number} tokenId - Foreign key to tokens table
+ * @property {number} score - Final weighted score (0-100)
+ * @property {number} holderScore - Holder concentration score (0-100)
+ * @property {number} creatorScore - Creator reputation score (0-100)
+ * @property {number} liquidityScore - Liquidity lock score (0-100)
+ * @property {number} pumpScore - Pump pattern score (0-100)
+ * @property {string[]} risks - Red flags detected (e.g., "High concentration")
+ * @property {string[]} positives - Green flags detected (e.g., "Locked liquidity")
+ * @property {number} timestamp - When analysis was performed
+ */
 export interface AnalysisRecord {
   id?: number;
   tokenId: number;
@@ -27,6 +59,17 @@ export interface AnalysisRecord {
   timestamp: number;
 }
 
+/**
+ * Alert sent record.
+ *
+ * Tracks which tokens have had Telegram alerts sent (prevents duplicates).
+ *
+ * @interface AlertRecord
+ * @property {number} [id] - Primary key (auto-generated)
+ * @property {number} tokenId - Foreign key to tokens table (UNIQUE)
+ * @property {number} alertTime - When Telegram alert was sent
+ * @property {string} [messageId] - Telegram message ID for reference
+ */
 export interface AlertRecord {
   id?: number;
   tokenId: number;
@@ -34,9 +77,35 @@ export interface AlertRecord {
   messageId?: string;
 }
 
+/**
+ * Database - SQLite persistence layer for memecoin bot.
+ *
+ * Manages three tables:
+ * - tokens: Detected memecoin launches
+ * - analyses: Scoring results for tokens
+ * - alerts_sent: Deduplication of Telegram alerts
+ *
+ * All methods return Promises and handle SQLite async operations.
+ * Errors are wrapped in DatabaseError with context.
+ *
+ * @example
+ * const db = new Database('./bot.db');
+ * await db.initialize();
+ * const tokenId = await db.insertToken({ contractAddress: '0x...', ... });
+ * await db.close();
+ */
 export class Database {
   private db: sqlite3.Database;
 
+  /**
+   * Constructs Database instance.
+   *
+   * Opens SQLite connection at specified path.
+   * If file doesn't exist, creates it.
+   *
+   * @param {string} dbPath - Path to SQLite database file (e.g., './bot.db')
+   * @throws {DatabaseError} If connection fails
+   */
   constructor(dbPath: string) {
     this.db = new sqlite3.Database(dbPath, (err) => {
       if (err) {
@@ -46,6 +115,23 @@ export class Database {
     });
   }
 
+  /**
+   * Initializes database schema.
+   *
+   * Creates three tables if they don't exist:
+   * 1. tokens - Unique memecoin launches (unique on contractAddress)
+   * 2. analyses - Scoring results (many-to-one with tokens)
+   * 3. alerts_sent - Alert history (one-to-one with tokens)
+   *
+   * Runs all CREATE TABLE statements in serialized mode (one after another).
+   *
+   * @returns {Promise<void>}
+   * @throws {DatabaseError} If table creation fails
+   *
+   * @example
+   * await db.initialize();
+   * console.log('Tables ready');
+   */
   async initialize(): Promise<void> {
     return new Promise((resolve, reject) => {
       this.db.serialize(() => {
@@ -105,6 +191,28 @@ export class Database {
     });
   }
 
+  /**
+   * Inserts or updates token record.
+   *
+   * Uses ON CONFLICT clause to handle duplicate contract addresses:
+   * - If contractAddress exists: Updates lastUpdated timestamp only
+   * - If new: Inserts new row
+   *
+   * @param {TokenRecord} token - Token data to insert
+   * @returns {Promise<number>} Database row ID
+   * @throws {DatabaseError} If insert fails
+   *
+   * @example
+   * const tokenId = await db.insertToken({
+   *   contractAddress: '0x123...',
+   *   name: 'Shib Inu',
+   *   symbol: 'SHIB',
+   *   launchTime: 1700000000000,
+   *   firstSeen: Date.now(),
+   *   lastUpdated: Date.now(),
+   *   source: 'clanker'
+   * });
+   */
   async insertToken(token: TokenRecord): Promise<number> {
     return new Promise((resolve, reject) => {
       const sql = `
@@ -123,6 +231,17 @@ export class Database {
     });
   }
 
+  /**
+   * Retrieves token by contract address.
+   *
+   * @param {string} contractAddress - ERC-20 contract address to look up
+   * @returns {Promise<TokenRecord | null>} Token record or null if not found
+   * @throws {DatabaseError} If query fails
+   *
+   * @example
+   * const token = await db.getToken('0x123...');
+   * if (token) console.log(`Found ${token.name}`);
+   */
   async getToken(contractAddress: string): Promise<TokenRecord | null> {
     return new Promise((resolve, reject) => {
       this.db.get('SELECT * FROM tokens WHERE contractAddress = ?', [contractAddress], (err, row: any) => {
@@ -132,6 +251,29 @@ export class Database {
     });
   }
 
+  /**
+   * Inserts analysis result for a token.
+   *
+   * Stores component scores and risk/positive flags.
+   * JSON stringifies arrays before inserting (SQLite stores as TEXT).
+   *
+   * @param {AnalysisRecord} analysis - Analysis data to store
+   * @returns {Promise<number>} Database row ID
+   * @throws {DatabaseError} If insert fails
+   *
+   * @example
+   * const analysisId = await db.insertAnalysis({
+   *   tokenId: 1,
+   *   score: 72,
+   *   holderScore: 60,
+   *   creatorScore: 85,
+   *   liquidityScore: 75,
+   *   pumpScore: 50,
+   *   risks: ['High concentration'],
+   *   positives: ['Locked liquidity'],
+   *   timestamp: Date.now()
+   * });
+   */
   async insertAnalysis(analysis: AnalysisRecord): Promise<number> {
     return new Promise((resolve, reject) => {
       const sql = `
@@ -159,6 +301,21 @@ export class Database {
     });
   }
 
+  /**
+   * Checks if Telegram alert has already been sent for token.
+   *
+   * Used to prevent sending duplicate alerts for same token.
+   *
+   * @param {number} tokenId - Token ID to check
+   * @returns {Promise<boolean>} True if alert was sent, false otherwise
+   * @throws {DatabaseError} If query fails
+   *
+   * @example
+   * if (!await db.hasAlertBeenSent(tokenId)) {
+   *   await telegramNotifier.sendAlert(...);
+   *   await db.recordAlertSent(tokenId);
+   * }
+   */
   async hasAlertBeenSent(tokenId: number): Promise<boolean> {
     return new Promise((resolve, reject) => {
       this.db.get('SELECT id FROM alerts_sent WHERE tokenId = ?', [tokenId], (err, row) => {
@@ -168,6 +325,20 @@ export class Database {
     });
   }
 
+  /**
+   * Records that Telegram alert was sent for token.
+   *
+   * Prevents duplicate alerts by storing alert timestamp and Telegram message ID.
+   * Uses REPLACE to update if record already exists.
+   *
+   * @param {number} tokenId - Token ID that alert was sent for
+   * @param {string} [messageId] - Optional Telegram message ID for reference
+   * @returns {Promise<number>} Database row ID
+   * @throws {DatabaseError} If insert/replace fails
+   *
+   * @example
+   * await db.recordAlertSent(tokenId, 'tg_msg_12345');
+   */
   async recordAlertSent(tokenId: number, messageId?: string): Promise<number> {
     return new Promise((resolve, reject) => {
       const sql = `
@@ -185,6 +356,19 @@ export class Database {
     });
   }
 
+  /**
+   * Retrieves most recent analysis for a token.
+   *
+   * Parses JSON arrays (risks, positives) back to strings.
+   *
+   * @param {number} tokenId - Token ID to query
+   * @returns {Promise<AnalysisRecord | null>} Latest analysis or null if not found
+   * @throws {DatabaseError} If query fails
+   *
+   * @example
+   * const analysis = await db.getLatestAnalysis(tokenId);
+   * console.log(`Last score: ${analysis?.score}`);
+   */
   async getLatestAnalysis(tokenId: number): Promise<AnalysisRecord | null> {
     return new Promise((resolve, reject) => {
       const sql = 'SELECT * FROM analyses WHERE tokenId = ? ORDER BY timestamp DESC LIMIT 1';
@@ -196,7 +380,14 @@ export class Database {
   }
 
   /**
-   * Verify database tables exist (for testing)
+   * Verifies that all required database tables exist.
+   *
+   * Used for testing and diagnostics.
+   *
+   * @returns {Promise<boolean>} True if all 3 tables exist, false otherwise
+   *
+   * @example
+   * if (!await db.verifyTables()) throw new Error('Database corrupted');
    */
   async verifyTables(): Promise<boolean> {
     return new Promise((resolve) => {
@@ -213,7 +404,16 @@ export class Database {
   }
 
   /**
-   * Get token count (for testing)
+   * Gets total number of tokens in database.
+   *
+   * Used for testing and progress monitoring.
+   *
+   * @returns {Promise<number>} Total token count
+   * @throws {DatabaseError} If query fails
+   *
+   * @example
+   * const count = await db.getTokenCount();
+   * console.log(`${count} tokens analyzed`);
    */
   async getTokenCount(): Promise<number> {
     return new Promise((resolve, reject) => {
@@ -224,6 +424,18 @@ export class Database {
     });
   }
 
+  /**
+   * Closes database connection gracefully.
+   *
+   * Should be called during bot shutdown to prevent hanging connections.
+   *
+   * @returns {Promise<void>}
+   * @throws {Error} If connection close fails
+   *
+   * @example
+   * await db.close();
+   * process.exit(0);
+   */
   close(): Promise<void> {
     return new Promise((resolve, reject) => {
       this.db.close((err) => {
