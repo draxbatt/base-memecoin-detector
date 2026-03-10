@@ -422,7 +422,23 @@
   - [x] Test data validation ✅
   - **Deliverable:** End-to-end flow working ✅
 
-- [ ] **Manual Testing (with Drix)**
+- [x] **Manual Testing Harness** (Phase 4 - NEW)
+  - [x] Create ManualTestHarness class → `tests/manual-testing.ts` ✅
+  - [x] Implement 8-phase test suite:
+    - [x] Bot Initialization (verify all components startup)
+    - [x] Token Detection Pipeline (verify scraper formats)
+    - [x] Scoring Pipeline (validate weighted calculations)
+    - [x] Alert Generation (verify message fields)
+    - [x] Database Operations (test CRUD)
+    - [x] Error Recovery (graceful API failure handling)
+    - [x] Token Deduplication (no duplicate alerts)
+    - [x] Performance Benchmarks (latency targets)
+  - [x] Add database helper methods (verifyTables, getTokenCount)
+  - [x] Add npm run test:manual script
+  - [x] Generate JSON + TXT test reports
+  - **Deliverable:** `npm run test:manual` produces detailed test report ✅
+
+- [ ] **Manual Testing (with Drix)** ← NEXT ITEM
   - [ ] Run bot locally for 30 minutes
   - [ ] Check Telegram alerts (real messages to test group)
   - [ ] Verify scoring matches Drix expectations
