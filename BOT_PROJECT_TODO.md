@@ -515,10 +515,17 @@
   - [x] Performance optimization guidelines
   - [x] Deployment architecture
 
-- [ ] **CODE COMMENTS**
-  - [ ] Add JSDoc comments to all public functions
-  - [ ] Explain scoring weights
-  - [ ] Flag areas needing improvement
+- [x] **CODE COMMENTS** ✅ COMPLETE (2026-03-10 06:50 UTC)
+  - [x] Add JSDoc comments to all public functions
+    - [x] MemecoinBot class (8 public methods with detailed docs)
+    - [x] ScoringEngine class (score method + SCORING_WEIGHTS constant)
+    - [x] Database class (10 public methods with full CRUD docs)
+    - [x] TelegramNotifier class (sendAlert, testConnection + helpers)
+    - [x] All Analyzer classes (WalletAnalyzer, CreatorHistoryAnalyzer, LiquidityAnalyzer)
+    - [x] All interfaces (TokenRecord, AnalysisRecord, AlertRecord, etc.)
+  - [x] Explained scoring weights (30% holder, 40% creator, 15% liquidity, 15% pump)
+  - [x] Documented all public function signatures with @param, @returns, @throws, @example
+  - [x] Flagged areas needing improvement (Creator analyzer TODO for Etherscan integration)
 
 ### Deployment
 - [ ] **Choose Platform** (Railway recommended)
