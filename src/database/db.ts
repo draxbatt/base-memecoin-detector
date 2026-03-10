@@ -195,6 +195,35 @@ export class Database {
     });
   }
 
+  /**
+   * Verify database tables exist (for testing)
+   */
+  async verifyTables(): Promise<boolean> {
+    return new Promise((resolve) => {
+      const sql = `SELECT name FROM sqlite_master WHERE type='table' AND name IN ('tokens', 'analyses', 'alerts_sent')`;
+      this.db.all(sql, (err, rows: any[]) => {
+        if (err) {
+          logger.error('Failed to verify tables', { error: err.message });
+          resolve(false);
+        } else {
+          resolve(rows && rows.length >= 3);
+        }
+      });
+    });
+  }
+
+  /**
+   * Get token count (for testing)
+   */
+  async getTokenCount(): Promise<number> {
+    return new Promise((resolve, reject) => {
+      this.db.get('SELECT COUNT(*) as count FROM tokens', (err, row: any) => {
+        if (err) reject(new DatabaseError('Failed to get token count', { error: err.message }));
+        else resolve(row?.count || 0);
+      });
+    });
+  }
+
   close(): Promise<void> {
     return new Promise((resolve, reject) => {
       this.db.close((err) => {

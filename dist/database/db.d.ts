@@ -36,6 +36,14 @@ export declare class Database {
     hasAlertBeenSent(tokenId: number): Promise<boolean>;
     recordAlertSent(tokenId: number, messageId?: string): Promise<number>;
     getLatestAnalysis(tokenId: number): Promise<AnalysisRecord | null>;
+    /**
+     * Verify database tables exist (for testing)
+     */
+    verifyTables(): Promise<boolean>;
+    /**
+     * Get token count (for testing)
+     */
+    getTokenCount(): Promise<number>;
     close(): Promise<void>;
 }
 //# sourceMappingURL=db.d.ts.map
